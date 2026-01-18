@@ -3,4 +3,5 @@ dist
 .vite
 .DS_Store
 
-
+twine_examples
+scenarios

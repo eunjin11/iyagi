@@ -12,22 +12,21 @@ export const header = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  marginBottom: vars.space.lg
+  marginBottom: vars.space.lg,
+  marginTop: vars.space.lg
 });
 
 export const title = style({
   margin: 0,
   fontSize: 'clamp(20px, 5vw, 28px)',
   letterSpacing: '0.2px',
-  background: `linear-gradient(135deg, ${vars.color.accent}, ${vars.color.accent2})`,
   WebkitBackgroundClip: 'text',
-  backgroundClip: 'text',
-  color: 'transparent'
+  color: 'black'
 });
 
 export const content = style({
   display: 'grid',
-  gap: vars.space.lg,
+  gap: '0',
   justifyItems: 'center'
 });
 
@@ -36,7 +35,9 @@ export const card = style({
   maxWidth: vars.size.maxContent,
   background: vars.color.panel,
   padding: vars.space.xl,
-  fontSize: '15px'
+  fontSize: '15px',
+  height: '65vh',
+  overflowY: 'auto'
 });
 
 export const actionRow = style({

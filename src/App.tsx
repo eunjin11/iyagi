@@ -1,21 +1,81 @@
 import React from 'react';
 import { header, title, content, card, actionRow, actionButton } from './styles/app.css';
+import { useStoryEngine } from './story/engine';
+import { currentStory } from './story/current';
 
 export default function App(): React.JSX.Element {
+  const { passage, choices, vars, choose } = useStoryEngine(currentStory);
+  const isDev = import.meta.env.DEV === true;
+  function renderPassage(text: string) {
+    const lines = String(text).split('\n');
+    return (
+      <>
+        {lines.map((line, idx) => {
+          if (line.trim().startsWith('###')) {
+            const h = line.replace(/^###\s*/, '');
+            return (
+              <h3 key={`h-${idx}`} style={{ margin: '1em 0 .5em', fontWeight: 600 }}>
+                {h}
+              </h3>
+            );
+          }
+          if (line.trim() === '') {
+            return <div key={`sp-${idx}`} style={{ height: '0.6em' }} />;
+          }
+          return (
+            <div key={`l-${idx}`} style={{ whiteSpace: 'pre-wrap' }}>
+              {line}
+            </div>
+          );
+        })}
+      </>
+    );
+  }
   return (
     <>
       <header className={header}>
-        <h1 className={title}>Text RPG</h1>
+        <h1 className={title}>{currentStory.title}</h1>
       </header>
       <main className={content}>
         <section className={card} aria-label="story">
-          여행자는 어두운 숲 가장자리에 서 있습니다. 어디로 갈까요?
+          <div>{renderPassage(passage.text)}</div>
         </section>
         <nav className={actionRow} aria-label="actions">
-          <button className={actionButton}>숲으로 들어간다</button>
-          <button className={actionButton} aria-disabled="true">마을로 돌아간다</button>
+          {choices.map((c, idx) => (
+            <button
+              key={idx}
+              className={actionButton}
+              onClick={() => choose(c)}
+            >
+              {c.text}
+            </button>
+          ))}
         </nav>
       </main>
+      {isDev && (
+        <div
+          aria-label="debug-overlay"
+          style={{
+            position: 'fixed',
+            right: 12,
+            bottom: 12,
+            zIndex: 9999,
+            backgroundColor: 'rgba(128, 128, 128, 0.6)',
+            color: '#fff',
+            padding: '8px 10px',
+            maxWidth: '42vw',
+            maxHeight: '40vh',
+            overflow: 'auto',
+            fontSize: 12,
+            lineHeight: '1.4',
+            pointerEvents: 'none'
+          }}
+        >
+          <pre style={{ margin: 0 }}>
+            {JSON.stringify(vars, null, 2)}
+          </pre>
+        </div>
+      )}
     </>
   );
 }
