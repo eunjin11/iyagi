@@ -332,7 +332,11 @@ async function run() {
     const parsedLinks = parseLinks(decoded);
     const choices = parsedLinks.choices;
     // Drop standalone choice lines from narrative
-    const text = stripChoiceDisplayLines(parsedLinks.text, choices);
+    let text = stripChoiceDisplayLines(parsedLinks.text, choices);
+    // Normalize variable placeholders (fix common typos and unify to $var)
+    text = text
+      .replace(/\$\{([a-zA-Z0-9_]+)\}/g, (_m, v) => `$${v}`)
+      .replace(/\$siton_heart/g, '$sion_heart');
   // Apply dangling condition groups (from empty if blocks) to the last choices
   if (ifParsed.dangling && ifParsed.dangling.length > 0 && choices.length > 0) {
     for (const groups of ifParsed.dangling) {

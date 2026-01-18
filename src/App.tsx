@@ -1,18 +1,54 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { header, title, content, card, actionRow, actionButton } from './styles/app.css';
 import { useStoryEngine } from './story/engine';
 import { currentStory } from './story/current';
 
-export default function App(): React.JSX.Element {
-  const { passage, choices, vars, choose } = useStoryEngine(currentStory);
+function StoryView(): React.JSX.Element {
+  const { story, passage, choices, vars, choose, getSnapshot, setSnapshot } = useStoryEngine(currentStory);
+  const restoringRef = useRef<boolean>(false);
+
+  // Initialize history state without changing URL and handle back/forward
+  useEffect(() => {
+    const snap = getSnapshot();
+    window.history.replaceState(snap, document.title, window.location.href);
+    const onPopState = (e: PopStateEvent) => {
+      const state = (e.state as any) || null;
+      if (state && typeof state.id === 'string' && state.vars) {
+        restoringRef.current = true;
+        setSnapshot({ id: state.id, vars: state.vars }, { skipEnter: true });
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Push state on changes (skip when restoring from popstate)
+  useEffect(() => {
+    if (restoringRef.current) {
+      restoringRef.current = false;
+      return;
+    }
+    const snap = getSnapshot();
+    window.history.pushState(snap, document.title, window.location.href);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passage?.id, vars]);
+
   const isDev = import.meta.env.DEV === true;
   function renderPassage(text: string) {
+    // Replace $var placeholders with current values
+    const interpolate = (src: string) =>
+      src.replace(/\$([a-zA-Z0-9_]+)/g, (_m, key) => {
+        const v = (vars as Record<string, unknown>)[key];
+        return typeof v === 'undefined' ? _m : String(v);
+      });
     const lines = String(text).split('\n');
     return (
       <>
         {lines.map((line, idx) => {
+          const lineInterp = interpolate(line);
           if (line.trim().startsWith('###')) {
-            const h = line.replace(/^###\s*/, '');
+            const h = lineInterp.replace(/^###\s*/, '');
             return (
               <h3 key={`h-${idx}`} style={{ margin: '1em 0 .5em', fontWeight: 600 }}>
                 {h}
@@ -24,7 +60,7 @@ export default function App(): React.JSX.Element {
           }
           return (
             <div key={`l-${idx}`} style={{ whiteSpace: 'pre-wrap' }}>
-              {line}
+              {lineInterp}
             </div>
           );
         })}
@@ -34,7 +70,7 @@ export default function App(): React.JSX.Element {
   return (
     <>
       <header className={header}>
-        <h1 className={title}>{currentStory.title}</h1>
+        <h1 className={title}>{story.title}</h1>
       </header>
       <main className={content}>
         <section className={card} aria-label="story">
@@ -78,6 +114,16 @@ export default function App(): React.JSX.Element {
       )}
     </>
   );
+}
+
+function RouterShell(): React.JSX.Element {
+  return (
+    <StoryView />
+  );
+}
+
+export default function App(): React.JSX.Element {
+  return <RouterShell />;
 }
 
 

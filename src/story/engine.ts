@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Choice, Story, VariableBag, ChoiceCondition, ChoiceEffect } from './types';
 
 function checkCondition(vars: VariableBag, cond: ChoiceCondition): boolean {
@@ -54,6 +54,7 @@ function isChoiceVisible(choice: Choice, vars: VariableBag): boolean {
 export function useStoryEngine(story: Story) {
   const [currentId, setCurrentId] = useState<string>(story.start);
   const [vars, setVars] = useState<VariableBag>(story.init ?? {});
+  const skipEnterOnceRef = useRef<boolean>(false);
 
   const passage = useMemo(() => story.passages[currentId], [story, currentId]);
   const visibleChoices = useMemo(
@@ -64,6 +65,10 @@ export function useStoryEngine(story: Story) {
   // Apply passage-enter effects whenever we navigate to a passage
   useEffect(() => {
     if (!passage?.enter || passage.enter.length === 0) return;
+    if (skipEnterOnceRef.current) {
+      skipEnterOnceRef.current = false;
+      return;
+    }
     setVars((prev) => {
       let next = prev;
       for (const eff of passage.enter!) {
@@ -90,13 +95,30 @@ export function useStoryEngine(story: Story) {
     setVars(story.init ?? {});
   }
 
+  function getSnapshot() {
+    return { id: currentId, vars: { ...vars } };
+  }
+
+  function setSnapshot(
+    snap: { id: string; vars: VariableBag },
+    options?: { skipEnter?: boolean }
+  ) {
+    if (options?.skipEnter) {
+      skipEnterOnceRef.current = true;
+    }
+    setVars(snap.vars);
+    setCurrentId(snap.id);
+  }
+
   return {
     story,
     passage,
     choices: visibleChoices,
     vars,
     choose,
-    restart
+    restart,
+    getSnapshot,
+    setSnapshot
   };
 }
 
