@@ -1980,6 +1980,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsep@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "jsep@npm:1.4.0"
+  checksum: 10c0/fe60adf47e050e22eadced42514a51a15a3cf0e2d147896584486acd8ee670fc16641101b9aeb81f4aaba382043d29744b7aac41171e8106515b14f27e0c7116
+  languageName: node
+  linkType: hard
+
 "jsesc@npm:^3.0.2":
   version: 3.1.0
   resolution: "jsesc@npm:3.1.0"
@@ -2629,6 +2636,7 @@ __metadata:
     "@vanilla-extract/css": "npm:^1.15.3"
     "@vanilla-extract/vite-plugin": "npm:^4.0.7"
     "@vitejs/plugin-react": "npm:^4.3.4"
+    jsep: "npm:^1.4.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-router-dom: "npm:^6.26.2"

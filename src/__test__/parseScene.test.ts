@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseDSL } from '../parser/parseScene';
+import { evalCondition } from '../story/conditionAst';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -70,6 +71,27 @@ s {
       expect(s.choices).toEqual([{ text: '가기', script: 'jump("u")' }]);
     });
 
+    it('선택지 if (cond) "레이블" -> { } 한 줄 → enabledWhenAst', () => {
+      const { story, errors } = parseDSL(`
+s {
+  choices:
+    if ( gold>=1 ) "빵" -> { dec("gold", 1) }
+    "길" -> { jump("x") }
+}
+`);
+      expect(errors).toEqual([]);
+      expect(story.scenes.s?.choices[0]).toMatchObject({
+        text: '빵',
+        enabledWhenAst: {
+          kind: 'binary',
+          op: '>=',
+          left: { kind: 'var', name: 'gold' },
+          right: { kind: 'lit', value: 1 },
+        },
+      });
+      expect(story.scenes.s?.choices[1]).toEqual({ text: '길', script: 'jump("x")' });
+    });
+
     it('선택지: -> 다음 줄에 { … } 멀티라인', () => {
       const { story, errors } = parseDSL(`
 s {
@@ -99,6 +121,26 @@ s {
       expect(errors).toEqual([]);
       expect(story.scenes.s?.choices[0]?.script).toContain('inc("gold", 1)');
       expect(story.scenes.s?.choices[0]?.script).toContain('jump("b")');
+    });
+
+    it('조건부 선택은 if 한 줄만', () => {
+      const { story, errors } = parseDSL(`
+s {
+  choices:
+    if (hp < 3) "도망" -> { jump("safe") }
+}
+`);
+      expect(errors).toEqual([]);
+      expect(story.scenes.s?.choices[0]).toMatchObject({
+        text: '도망',
+        enabledWhenAst: {
+          kind: 'binary',
+          op: '<',
+          left: { kind: 'var', name: 'hp' },
+          right: { kind: 'lit', value: 3 },
+        },
+      });
+      expect(story.scenes.s?.choices[0]?.script).toContain('jump("safe")');
     });
   });
 
@@ -130,6 +172,32 @@ s {
         content: '맛있는 열매를 먹고 여행을 마치고 집으로 돌아간다.',
       });
       expect(steps?.[2]).toEqual({ type: 'script', code: 'inc("hp", 1)' });
+    });
+
+    it('village: 빵은 if(gold>=1)·evalCondition·다른 선택지는 조건 없음', () => {
+      const { story, errors } = parseDSL(demoStorySource(), { title: '여행', start: 'start' });
+      expect(errors).toEqual([]);
+      const village = story.scenes.village!;
+      expect(village.choices).toHaveLength(3);
+
+      const bread = village.choices.find((c) => c.text === '빵을 산다');
+      expect(bread?.enabledWhenAst).toEqual({
+        kind: 'binary',
+        op: '>=',
+        left: { kind: 'var', name: 'gold' },
+        right: { kind: 'lit', value: 1 },
+      });
+      expect(bread?.script).toContain('jump("going_home")');
+
+      const varsPoor = { hp: 10, gold: 0 };
+      const varsRich = { hp: 10, gold: 1 };
+      expect(evalCondition(bread!.enabledWhenAst!, varsPoor)).toBe(false);
+      expect(evalCondition(bread!.enabledWhenAst!, varsRich)).toBe(true);
+
+      const road = village.choices.find((c) => c.text === '다시 길로 나온다');
+      const end = village.choices.find((c) => c.text === '여행을 마치고 집으로 돌아간다');
+      expect(road?.enabledWhenAst).toBeUndefined();
+      expect(end?.enabledWhenAst).toBeUndefined();
     });
   });
 

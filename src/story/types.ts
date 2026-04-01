@@ -1,3 +1,5 @@
+import type { ConditionAst } from './conditionAst';
+
 export type VariableBag = Record<string, number | string | boolean>;
 
 // ---------------------------------------------------------------------------
@@ -16,6 +18,8 @@ export type Choice = {
   text: string;
   /** 선택 시 실행할 JS 코드 (jump 포함) */
   script: string;
+  /** 있으면 이 조건이 참일 때만 선택 가능(AST, 파서가 `if (…) "…" -> …`에서 생성). */
+  enabledWhenAst?: ConditionAst;
 };
 
 // ---------------------------------------------------------------------------

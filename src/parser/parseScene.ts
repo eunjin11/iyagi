@@ -1,4 +1,5 @@
 import type { Choice, Scene, Step, Story, VariableBag } from "../story/types";
+import { parseCondition } from "./parseCondition";
 
 // ---------------------------------------------------------------------------
 // 공개 API
@@ -22,7 +23,8 @@ export type ParseResult = {
  *   "대사"
  *   if (heart > 0) jump("sceneB")
  *   choices:
- *     "선택지 1" -> { jump("sceneA") }
+ *     if (gold >= 1) "빵" -> { dec("gold", 1) }
+ *     "선택지" -> { jump("sceneA") }
  *     "선택지 2" ->
  *       {
  *         jump("sceneB")
@@ -189,8 +191,15 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
     }
 
     if (inChoices) {
+      const ifLineChoice = matchIfChoiceLine(line, id, errors);
+      if (ifLineChoice) {
+        choices.push(ifLineChoice);
+        i++;
+        continue;
+      }
+
       // "텍스트" -> { script }  (한 줄)
-      const singleLine = matchChoiceSingleLine(line);
+      const singleLine = matchChoiceSingleLine(line, id, errors);
       if (singleLine) {
         choices.push(singleLine);
         i++;
@@ -260,7 +269,7 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
           continue;
         }
 
-        choices.push({ text, script });
+        choices.push(choiceFromParts(text, script, undefined, id, errors));
         i = k;
         continue;
       }
@@ -274,10 +283,15 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
         const closingIdx = afterBrace.indexOf("}");
         if (closingIdx !== -1) {
           // 한 줄에서 열고 닫힘 — 이미 singleLine에서 처리됐어야 하지만 안전망
-          choices.push({
-            text,
-            script: afterBrace.slice(0, closingIdx).trim(),
-          });
+          choices.push(
+            choiceFromParts(
+              text,
+              afterBrace.slice(0, closingIdx).trim(),
+              undefined,
+              id,
+              errors,
+            ),
+          );
           i++;
           continue;
         }
@@ -294,7 +308,9 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
           scriptLines.push(inner);
           i++;
         }
-        choices.push({ text, script: scriptLines.join("\n").trim() });
+        choices.push(
+          choiceFromParts(text, scriptLines.join("\n").trim(), undefined, id, errors),
+        );
         continue;
       }
 
@@ -323,12 +339,69 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
   return { id, steps, choices };
 }
 
+function choiceFromParts(
+  text: string,
+  script: string,
+  enabledWhenRaw: string | undefined,
+  sceneId: string,
+  errors: string[],
+): Choice {
+  const w = enabledWhenRaw?.trim();
+  if (!w) return { text, script };
+  const r = parseCondition(w);
+  if (!r.ok) {
+    errors.push(`Scene "${sceneId}": 선택 조건 파싱 실패 — ${r.error}: ${w}`);
+    return { text, script, enabledWhenAst: { kind: 'lit', value: false } };
+  }
+  return { text, script, enabledWhenAst: r.ast };
+}
+
+/** `if (조건) "레이블" -> { script }` 한 줄 (스크립트 본문은 같은 줄에서 닫힘). */
+function matchIfChoiceLine(
+  line: string,
+  sceneId: string,
+  errors: string[],
+): Choice | null {
+  const trimmed = line.trim();
+  const ifHead = /^if\s*\(/i.exec(trimmed);
+  if (!ifHead) return null;
+
+  let pos = ifHead[0].length;
+  let depth = 1;
+  const condStart = pos;
+  while (pos < trimmed.length && depth > 0) {
+    const c = trimmed[pos];
+    if (c === "(") depth++;
+    else if (c === ")") depth--;
+    pos++;
+  }
+  if (depth !== 0) {
+    errors.push(`Scene "${sceneId}": if(…) 조건 괄호가 닫히지 않음`);
+    return null;
+  }
+
+  const condition = trimmed.slice(condStart, pos - 1).trim();
+  const rest = trimmed.slice(pos).trim();
+  const tail = /^"([^"]+)"\s*->\s*\{([^}]*)\}\s*$/.exec(rest);
+  if (!tail) {
+    errors.push(
+      `Scene "${sceneId}": if (…) 뒤에는 "텍스트" -> { 한 줄 스크립트 } 형식이 필요 (${rest.slice(0, 48)})`,
+    );
+    return null;
+  }
+  return choiceFromParts(tail[1], tail[2].trim(), condition, sceneId, errors);
+}
+
 /** `"텍스트" -> { script }` 한 줄 패턴 매칭 */
-function matchChoiceSingleLine(line: string): Choice | null {
+function matchChoiceSingleLine(
+  line: string,
+  sceneId: string,
+  errors: string[],
+): Choice | null {
   const re = /^"([^"]+)"\s*->\s*\{([^}]*)\}$/;
   const m = re.exec(line);
   if (!m) return null;
-  return { text: m[1], script: m[2].trim() };
+  return choiceFromParts(m[1], m[2].trim(), undefined, sceneId, errors);
 }
 
 function unescapeString(s: string): string {

@@ -44,7 +44,7 @@ village {
   "마을은 평화롭다. 장터가 북적인다."
   "빵집에서 고소한 냄새가 풍긴다."
   choices:
-    "빵을 산다 (gold >= 1)" -> { dec("gold", 1); inc("hp", 2); jump("start") }
+    if (gold >= 1) "빵을 산다" -> { dec("gold", 1); inc("hp", 2); jump("going_home") }
     "다시 길로 나온다"       -> { jump("start") }
     "여행을 마치고 집으로 돌아간다" -> { jump("ending") }
 }
