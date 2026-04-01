@@ -22,6 +22,7 @@ forest {
 after_fruit {
   if (hp <= 0) jump("gameover")
   "맛있는 열매를 먹고 여행을 마치고 집으로 돌아간다."
+  inc("hp", 1)
   choices:
     "처음으로 돌아가기" -> { set("hp", 10); set("gold", 0); jump("start") }
 }

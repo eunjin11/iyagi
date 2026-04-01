@@ -4,11 +4,12 @@ import { useStoryEngine } from './story/engine';
 import { currentStory } from './story/current';
 
 function StoryView(): React.JSX.Element {
-  const { story, currentStep, pastTexts, isDone, choices, vars, advance, choose } =
+  const { story, currentStep, pastTexts, isDone, choices, vars, storyLog, advance, choose } =
     useStoryEngine(currentStory);
 
   const isDev = import.meta.env.DEV === true;
   const storyPanelRef = useRef<HTMLElement>(null);
+  const logScrollRef = useRef<HTMLDivElement>(null);
 
   const canAdvance = Boolean(currentStep);
 
@@ -24,6 +25,12 @@ function StoryView(): React.JSX.Element {
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [pastTexts.length, currentStep?.content]);
+
+  useEffect(() => {
+    const el = logScrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [storyLog.length]);
 
   return (
     <>
@@ -80,6 +87,90 @@ function StoryView(): React.JSX.Element {
             <div style={{ opacity: 0.6, textAlign: 'center' }}>— END —</div>
           </section>
         )}
+
+        <details className={card} style={{ marginTop: '1rem' }}>
+          <summary style={{ cursor: 'pointer', userSelect: 'none' }}>
+            스토리 로그 ({storyLog.length}줄)
+          </summary>
+          <div
+            ref={logScrollRef}
+            aria-label="story-log"
+            style={{
+              marginTop: '0.75rem',
+              maxHeight: 'min(36vh, 280px)',
+              overflow: 'auto',
+              fontSize: 13,
+              lineHeight: 1.45,
+              borderTop: '1px solid rgba(0,0,0,0.08)',
+              paddingTop: '0.75rem',
+            }}
+          >
+            {storyLog.length === 0 ? (
+              <div style={{ opacity: 0.55 }}>아직 기록이 없습니다.</div>
+            ) : (
+              storyLog.map((entry, i) => (
+                <div key={i} style={{ marginBottom: '0.65em' }}>
+                  {entry.kind === 'enterScene' && (
+                    <div style={{ opacity: 0.7 }}>
+                      <strong>씬</strong> · <code>{entry.sceneId}</code>
+                    </div>
+                  )}
+                  {entry.kind === 'text' && (
+                    <div>
+                      <strong>대사</strong> · <code style={{ opacity: 0.65 }}>{entry.sceneId}</code>
+                      <div style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>
+                        {interpolate(entry.content)}
+                      </div>
+                    </div>
+                  )}
+                  {entry.kind === 'script' && (
+                    <div>
+                      <strong>스크립트</strong> · <code style={{ opacity: 0.65 }}>{entry.sceneId}</code>
+                      {isDev ? (
+                        <pre
+                          style={{
+                            margin: '6px 0 0',
+                            padding: '8px 10px',
+                            background: 'rgba(0,0,0,0.06)',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {entry.code}
+                        </pre>
+                      ) : (
+                        <div style={{ marginTop: 4, opacity: 0.65 }}>(스크립트 실행됨)</div>
+                      )}
+                    </div>
+                  )}
+                  {entry.kind === 'choice' && (
+                    <div>
+                      <strong>선택</strong> · <code style={{ opacity: 0.65 }}>{entry.sceneId}</code>
+                      <div style={{ marginTop: 4 }}>「{entry.text}」</div>
+                      {isDev && (
+                        <pre
+                          style={{
+                            margin: '6px 0 0',
+                            padding: '8px 10px',
+                            background: 'rgba(0,0,0,0.06)',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {entry.script}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </details>
       </main>
 
       {isDev && (

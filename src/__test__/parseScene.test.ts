@@ -118,6 +118,19 @@ s {
       const run = story.scenes.deep?.choices.find((c) => c.text === '도망친다');
       expect(run?.script).toContain('set("hp", 5)');
     });
+
+    it('after_fruit: 진입 스크립트 → 대사 → 대사 이후 inc 스크립트 순 스텝', () => {
+      const { story, errors } = parseDSL(demoStorySource(), { title: '여행', start: 'start' });
+      expect(errors).toEqual([]);
+      const steps = story.scenes.after_fruit?.steps;
+      expect(steps?.[0]).toEqual({ type: 'script', code: 'if (hp <= 0) jump("gameover")' });
+      expect(steps?.[1]?.type).toBe('text');
+      expect(steps?.[1]).toMatchObject({
+        type: 'text',
+        content: '맛있는 열매를 먹고 여행을 마치고 집으로 돌아간다.',
+      });
+      expect(steps?.[2]).toEqual({ type: 'script', code: 'inc("hp", 1)' });
+    });
   });
 
   describe('에러', () => {

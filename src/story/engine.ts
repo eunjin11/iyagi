@@ -1,6 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Choice, Scene, Story, VariableBag } from './types';
-import { runScript } from '../actions';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import type { Choice, Scene, Step, Story, VariableBag } from './types';
+import {
+  initialEngineState,
+  storyReducer,
+  type StoryEngineState,
+  type StoryEvent,
+  type StoryReducerEvent,
+} from './storyReducer';
+import type { StoryLogEntry } from './storyLog';
+import { runScriptWithResult } from './runScriptWithResult';
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -10,67 +18,102 @@ function emptyScene(id: string): Scene {
   return { id, steps: [], choices: [] };
 }
 
-// ---------------------------------------------------------------------------
-// hook
-// ---------------------------------------------------------------------------
-
-export function useStoryEngine(story: Story) {
-  const [sceneId, setSceneId] = useState<string>(story.start);
-  const [stepIndex, setStepIndex] = useState<number>(0);
-  const [vars, setVars] = useState<VariableBag>(story.init ?? {});
-
-  // jumped 플래그 — script step에서 jump()가 불리면 남은 step 처리를 중단
-  const jumpedRef = useRef<boolean>(false);
-
-  const scene: Scene = story.scenes[sceneId] ?? emptyScene(sceneId);
+function deriveFromState(story: Story, state: StoryEngineState) {
+  const scene: Scene = story.scenes[state.sceneId] ?? emptyScene(state.sceneId);
   const steps = scene.steps;
 
-  // navigate 함수 (useCallback으로 안정화)
-  const navigate = useCallback((id: string) => {
-    jumpedRef.current = true;
-    setSceneId(id);
-    setStepIndex(0);
-  }, []);
+  const at = steps[state.stepIndex];
+  const currentStep: Extract<Step, { type: 'text' }> | null =
+    at?.type === 'text' ? at : null;
+  const isDone = state.stepIndex >= steps.length;
 
-  // script step 자동 실행 — stepIndex가 script를 가리킬 때 즉시 실행
-  useEffect(() => {
-    const step = steps[stepIndex];
-    if (!step || step.type !== 'script') return;
-
-    jumpedRef.current = false;
-    runScript(step.code, vars, { vars, setVars, navigate });
-
-    if (!jumpedRef.current) {
-      setStepIndex((i) => i + 1);
-    }
-    // vars를 의존성에 넣으면 setVars 후 재실행되므로 의도적으로 제외
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepIndex, sceneId]);
-
-  // 현재 text step (null이면 아직 텍스트 없음 or 모든 step 완료)
-  const currentStep = steps[stepIndex]?.type === 'text' ? steps[stepIndex] : null;
-  const isDone = stepIndex >= steps.length;
-
-  // 지금까지 지나간 text step들 (누적 표시용)
   const pastTexts: string[] = [];
-  for (let i = 0; i < stepIndex; i++) {
+  for (let i = 0; i < state.stepIndex; i++) {
     const s = steps[i];
     if (s.type === 'text') pastTexts.push(s.content);
   }
 
   const choices: Choice[] = isDone ? scene.choices : [];
 
-  /** text step을 클릭으로 진행 */
+  return { scene, steps, currentStep, isDone, pastTexts, choices };
+}
+
+function toReducerEvent(e: StoryEvent, vars: VariableBag): StoryReducerEvent {
+  if (e.type === 'RUN_SCRIPT') {
+    const { vars: nextVars, jumpTo } = runScriptWithResult(e.code, vars);
+    return { type: 'SCRIPT_DONE', context: e.context, vars: nextVars, jumpTo };
+  }
+  return e;
+}
+
+// ---------------------------------------------------------------------------
+// hook
+// ---------------------------------------------------------------------------
+
+export function useStoryEngine(story: Story) {
+  const stateRef = useRef<StoryEngineState>(initialEngineState(story));
+  const prevSceneIdRef = useRef<string | null>(null);
+  const [storyLog, setStoryLog] = useState<StoryLogEntry[]>([]);
+
+  const pushLog = useCallback((entry: StoryLogEntry) => {
+    setStoryLog((prev) => [...prev, entry]);
+  }, []);
+
+  const [state, dispatchReducer] = useReducer(
+    (s: StoryEngineState, e: StoryReducerEvent) => storyReducer(s, e, story),
+    story,
+    initialEngineState,
+  );
+
+  stateRef.current = state;
+
+  const dispatch = useCallback(
+    (e: StoryEvent) => {
+      if (e.type === 'RUN_SCRIPT' && e.context === 'step') {
+        pushLog({
+          kind: 'script',
+          sceneId: stateRef.current.sceneId,
+          code: e.code,
+        });
+      }
+      dispatchReducer(toReducerEvent(e, stateRef.current.vars));
+    },
+    [dispatchReducer, pushLog],
+  );
+
+  const { scene, steps, currentStep, isDone, pastTexts, choices } = deriveFromState(story, state);
+
+  useEffect(() => {
+    if (prevSceneIdRef.current === state.sceneId) return;
+    prevSceneIdRef.current = state.sceneId;
+    pushLog({ kind: 'enterScene', sceneId: state.sceneId });
+  }, [state.sceneId, pushLog]);
+
+  // script step: 대사 뒤에 오는 `inc(...)` 등은 텍스트 스텝을 TAP_ADVANCE로 지난 뒤 이 인덱스에서 실행됨
+  useEffect(() => {
+    const step = steps[state.stepIndex];
+    if (!step || step.type !== 'script') return;
+
+    dispatch({ type: 'RUN_SCRIPT', context: 'step', code: step.code });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.sceneId, state.stepIndex]);
+
   function advance() {
-    const step = steps[stepIndex];
-    if (!step || step.type !== 'text') return;
-    setStepIndex((i) => i + 1);
+    const step = steps[state.stepIndex];
+    if (step?.type === 'text') {
+      pushLog({ kind: 'text', sceneId: state.sceneId, content: step.content });
+    }
+    dispatch({ type: 'TAP_ADVANCE' });
   }
 
-  /** choice 선택 — script 실행 후 navigate까지 포함 */
   function choose(choice: Choice) {
-    jumpedRef.current = false;
-    runScript(choice.script, vars, { vars, setVars, navigate });
+    pushLog({
+      kind: 'choice',
+      sceneId: state.sceneId,
+      text: choice.text,
+      script: choice.script,
+    });
+    dispatch({ type: 'RUN_SCRIPT', context: 'choice', code: choice.script });
   }
 
   return {
@@ -80,7 +123,8 @@ export function useStoryEngine(story: Story) {
     pastTexts,
     isDone,
     choices,
-    vars,
+    vars: state.vars,
+    storyLog,
     advance,
     choose,
   };
