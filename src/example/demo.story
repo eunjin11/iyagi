@@ -15,7 +15,7 @@ forest {
   "숲은 조용하다. 나뭇잎이 속삭인다."
   "어둠 속에 뭔가 빛나는 게 보인다."
   choices:
-    "열매를 따서 먹는다 (HP+1)" -> { inc("hp", 1); jump("start") }
+    "열매를 따서 먹는다 (HP+1)" -> { inc("hp", 1); jump("after_fruit") }
     "더 깊이 들어간다 (HP-2)"   -> { dec("hp", 2); jump("deep") }
 }
 
