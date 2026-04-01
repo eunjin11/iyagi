@@ -4,7 +4,7 @@
 
 | 레이어 | 완성도 | 비고 |
 |---|---|---|
-| DSL 파서 (`parseScene.ts`) | ✅ 기본 동작 | 에러 메시지에 줄 번호 없음 |
+| DSL 파서 (`parseScene.ts`) | ✅ 기본 동작 | 수동 파서; Langium 전환은 Phase 2-4 |
 | 스토리 엔진 (`engine.ts`) | ✅ 기본 동작 | advance / choose 중심 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작 | jump, set, inc, dec 등 |
 | UI (`App.tsx`) | 🔶 최소 구현 | 단일 화면, 타이틀/엔딩 분리 없음 |
@@ -126,6 +126,29 @@ show (gold >= 5): "주머니가 묵직하다."
 - [ ] 타이틀 화면에서 `scenarios/` 내 모든 스토리 목록 표시
 - [ ] 스토리 선택 → 플레이 진입
 
+### 2-4. Langium 기반 DSL 파서 (`langium-cli`)
+수동 정규식 파서를 **Langium**으로 바꿔 문법을 한 곳에 모으고, 렉서/파서/AST·진단 위치를 자동 생성한다. 실행(`runScript`)과는 분리: **스크립트 줄은 JS 전체를 파싱하지 않고** 문자열(한 줄 또는 choice 블록 내)로만 잡아 기존과 같이 넘긴다.
+
+**스크립트 줄 규칙 (문법 설계 시):**
+- 쌍따옴표로 감싼 한 줄 → 텍스트 스텝
+- `choices:` 및 그 아래 선택지 패턴 → Choice
+- **그 외 한 줄** → `ScriptLine`(임의 스크립트, 개행까지). `choices`·대사 규칙보다 **나중에** 매칭되도록 우선순위 정리
+- `vars:` 블록(1-4)·`show:`(2-2)·중괄호 depth는 문법 또는 하이브리드 보조 로직으로 정리
+
+**작업:**
+- [ ] 의존성: `langium`, `langium-cli`, `@types/node`(버전은 Langium 문서 권장에 맞춤)
+- [ ] `src/language/story.langium`(경로는 팀 컨벤션에 맞게) — Document, VarsBlock, Scene, SceneBody, TextLine, ChoicesBlock, ChoiceLine, **ScriptLine** 등
+- [ ] `package.json` 스크립트: `langium:generate` → 생성물은 `src/language/generated/` 등 (**git**: 커밋할지 정책 결정; 보통 생성물 커밋 또는 CI 생성)
+- [ ] `createStoryServices` + `parseDocument`로 입력 문자열 → Langium AST
+- [ ] `astToStory(ast): ParseResult` — AST 순회해 `Story` / `ParseResult.errors` 생성 (공개 API `parseDSL` 시그니처 유지하면 교체 용이)
+- [ ] 커스텀 `ValidationRegistry` / 진단 — 알 수 없는 씬 참조, 빈 `choices:` 등
+- [ ] 기존 `parseScene.ts` 단계적 제거 또는 Langium 실패 시 폴백 제거 시점 명시
+- [ ] (선택) 하이브리드: 씬 껍데기만 Langium, 본문 줄 분류는 기존 `parseSceneBody` 로직 재사용 후 단계적으로 흡수
+
+**연계:**
+- **2-1** 줄 번호·에러 구조는 Langium 진단으로 상당 부분 대체 가능
+- **3-3** 테스트는 픽스처 + Langium `parseDocument` + `astToStory` 기대값 검증으로 이행
+
 ---
 
 ## Phase 3 — 기술 부채 해소
@@ -230,6 +253,8 @@ Phase 1-1 (선택지 조건)  →  Phase 1-2 (세이브)  →  Phase 1-3 (HUD, v
 Phase 3-2 (화면 분리)   →  Phase 2-3 (시나리오 목록 UI, 타이틀과 연동)
        ↓
 Phase 2-1 (파서 에러)   →  Phase 3-3 (테스트)
+       ↓
+Phase 2-4 (Langium)     — 2-1·3-3과 겹침 많음 → vars/show 문법 안정 후 본격화 권장
        ↓
 Phase 2-2, 3-1 (순서 무관)
        ↓
