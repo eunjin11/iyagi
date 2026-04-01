@@ -1,125 +1,106 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Choice, Story, VariableBag, ChoiceCondition, ChoiceEffect } from './types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Choice, Scene, StoryV2, VariableBag } from './types';
+import { runScript } from '../actions';
 
-function checkCondition(vars: VariableBag, cond: ChoiceCondition): boolean {
-  const v = vars[cond.key];
-  switch (cond.op) {
-    case 'truthy':
-      return Boolean(v);
-    case 'falsy':
-      return !Boolean(v);
-    case 'eq':
-      return v === cond.value;
-    case 'neq':
-      return v !== cond.value;
-    case 'gt':
-      return Number(v) > Number(cond.value);
-    case 'gte':
-      return Number(v) >= Number(cond.value);
-    case 'lt':
-      return Number(v) < Number(cond.value);
-    case 'lte':
-      return Number(v) <= Number(cond.value);
-    default:
-      return false;
-  }
+// ---------------------------------------------------------------------------
+// helpers
+// ---------------------------------------------------------------------------
+
+function emptyScene(id: string): Scene {
+  return { id, steps: [], choices: [] };
 }
 
-function applyEffect(vars: VariableBag, eff: ChoiceEffect): VariableBag {
-  const next = { ...vars };
-  if (eff.type === 'set') {
-    next[eff.key] = eff.value;
-  } else if (eff.type === 'inc') {
-    next[eff.key] = (Number(next[eff.key]) || 0) + eff.by;
-  } else if (eff.type === 'dec') {
-    next[eff.key] = (Number(next[eff.key]) || 0) - eff.by;
-  }
-  return next;
-}
+// ---------------------------------------------------------------------------
+// hook
+// ---------------------------------------------------------------------------
 
-function isChoiceVisible(choice: Choice, vars: VariableBag): boolean {
-  // ifAny: show if any group fully matches
-  if (choice.ifAny && choice.ifAny.length > 0) {
-    const anyOk = choice.ifAny.some((group) => group.every((c) => checkCondition(vars, c)));
-    // If both if and ifAny are present, require both
-    if (choice.if && choice.if.length > 0) {
-      return anyOk && choice.if.every((c) => checkCondition(vars, c));
-    }
-    return anyOk;
-  }
-  if (!choice.if || choice.if.length === 0) return true;
-  return choice.if.every((c) => checkCondition(vars, c));
-}
-
-export function useStoryEngine(story: Story) {
-  const [currentId, setCurrentId] = useState<string>(story.start);
+export function useStoryEngine(story: StoryV2) {
+  const [sceneId, setSceneId] = useState<string>(story.start);
+  const [stepIndex, setStepIndex] = useState<number>(0);
   const [vars, setVars] = useState<VariableBag>(story.init ?? {});
-  const skipEnterOnceRef = useRef<boolean>(false);
 
-  const passage = useMemo(() => story.passages[currentId], [story, currentId]);
-  const visibleChoices = useMemo(
-    () => passage.choices.filter((c) => isChoiceVisible(c, vars)),
-    [passage, vars]
-  );
+  // jumped 플래그 — script step에서 jump()가 불리면 남은 step 처리를 중단
+  const jumpedRef = useRef<boolean>(false);
 
-  // Apply passage-enter effects whenever we navigate to a passage
+  const scene: Scene = story.scenes[sceneId] ?? emptyScene(sceneId);
+  const steps = scene.steps;
+
+  // navigate 함수 (useCallback으로 안정화)
+  const navigate = useCallback((id: string) => {
+    jumpedRef.current = true;
+    setSceneId(id);
+    setStepIndex(0);
+  }, []);
+
+  // script step 자동 실행 — stepIndex가 script를 가리킬 때 즉시 실행
   useEffect(() => {
-    if (!passage?.enter || passage.enter.length === 0) return;
-    if (skipEnterOnceRef.current) {
-      skipEnterOnceRef.current = false;
-      return;
-    }
-    setVars((prev) => {
-      let next = prev;
-      for (const eff of passage.enter!) {
-        next = applyEffect(next, eff);
-      }
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentId]);
+    const step = steps[stepIndex];
+    if (!step || step.type !== 'script') return;
 
-  function choose(choice: Choice) {
-    let nextVars = vars;
-    if (choice.do) {
-      for (const eff of choice.do) {
-        nextVars = applyEffect(nextVars, eff);
-      }
+    jumpedRef.current = false;
+    runScript(step.code, vars, { vars, setVars, navigate });
+
+    if (!jumpedRef.current) {
+      setStepIndex((i) => i + 1);
     }
-    setVars(nextVars);
-    setCurrentId(choice.goto);
+    // vars를 의존성에 넣으면 setVars 후 재실행되므로 의도적으로 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIndex, sceneId]);
+
+  // 현재 text step (null이면 아직 텍스트 없음 or 모든 step 완료)
+  const currentStep = steps[stepIndex]?.type === 'text' ? steps[stepIndex] : null;
+  const isDone = stepIndex >= steps.length;
+
+  // 지금까지 지나간 text step들 (누적 표시용)
+  const pastTexts: string[] = [];
+  for (let i = 0; i < stepIndex; i++) {
+    const s = steps[i];
+    if (s.type === 'text') pastTexts.push(s.content);
+  }
+
+  const choices: Choice[] = isDone ? scene.choices : [];
+
+  /** text step을 클릭으로 진행 */
+  function advance() {
+    const step = steps[stepIndex];
+    if (!step || step.type !== 'text') return;
+    setStepIndex((i) => i + 1);
+  }
+
+  /** choice 선택 — script 실행 후 navigate까지 포함 */
+  function choose(choice: Choice) {
+    jumpedRef.current = false;
+    runScript(choice.script, vars, { vars, setVars, navigate });
   }
 
   function restart() {
-    setCurrentId(story.start);
+    setSceneId(story.start);
+    setStepIndex(0);
     setVars(story.init ?? {});
   }
 
   function getSnapshot() {
-    return { id: currentId, vars: { ...vars } };
+    return { sceneId, stepIndex, vars: { ...vars } };
   }
 
-  function setSnapshot(
-    snap: { id: string; vars: VariableBag },
-    options?: { skipEnter?: boolean }
-  ) {
-    if (options?.skipEnter) {
-      skipEnterOnceRef.current = true;
-    }
+  function setSnapshot(snap: { sceneId: string; stepIndex: number; vars: VariableBag }) {
+    setSceneId(snap.sceneId);
+    setStepIndex(snap.stepIndex);
     setVars(snap.vars);
-    setCurrentId(snap.id);
   }
 
   return {
     story,
-    passage,
-    choices: visibleChoices,
+    scene,
+    currentStep,
+    pastTexts,
+    isDone,
+    choices,
     vars,
+    advance,
     choose,
     restart,
     getSnapshot,
-    setSnapshot
+    setSnapshot,
   };
 }
-
-

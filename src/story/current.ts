@@ -1,28 +1,28 @@
-import type { Story } from './types';
+import type { StoryV2 } from './types';
 
-// Eagerly import any modules under scenarios
-const scenarioModules = import.meta.glob('../scenarios/*.ts', { eager: true }) as Record<string, any>;
+// scenarios/ 폴더 내 .ts 파일을 모두 즉시 로드
+const scenarioModules = import.meta.glob('../scenarios/*.ts', { eager: true }) as Record<string, unknown>;
 
-function asStory(value: unknown): Story | undefined {
+function asStory(value: unknown): StoryV2 | undefined {
   if (
     value &&
     typeof value === 'object' &&
-    typeof (value as any).title === 'string' &&
-    typeof (value as any).start === 'string' &&
-    (value as any).passages &&
-    typeof (value as any).passages === 'object'
+    typeof (value as StoryV2).title === 'string' &&
+    typeof (value as StoryV2).start === 'string' &&
+    (value as StoryV2).scenes &&
+    typeof (value as StoryV2).scenes === 'object'
   ) {
-    return value as Story;
+    return value as StoryV2;
   }
   return undefined;
 }
 
-function pickFirstStory(mods: Record<string, any>): Story | undefined {
+function pickFirstStory(mods: Record<string, unknown>): StoryV2 | undefined {
   for (const mod of Object.values(mods)) {
-    // Prefer named export "story" if present
-    if (asStory((mod as any).story)) return (mod as any).story as Story;
+    if (asStory((mod as Record<string, unknown>)?.['story'])) {
+      return (mod as Record<string, unknown>)['story'] as StoryV2;
+    }
   }
-  // Otherwise, find any export that looks like a Story
   for (const mod of Object.values(mods)) {
     for (const exported of Object.values(mod as Record<string, unknown>)) {
       const s = asStory(exported);
@@ -32,34 +32,35 @@ function pickFirstStory(mods: Record<string, any>): Story | undefined {
   return undefined;
 }
 
-let resolved: Story | undefined = pickFirstStory(scenarioModules);
+let resolved: StoryV2 | undefined = pickFirstStory(scenarioModules);
 
-// Fallback: try any examples
+// Fallback: example 폴더
 if (!resolved) {
-  const exampleModules = import.meta.glob('../example/*.ts', { eager: true }) as Record<string, any>;
-  // Prefer demo.story.ts "story"
+  const exampleModules = import.meta.glob('../example/*.ts', { eager: true }) as Record<string, unknown>;
   const preferred = exampleModules['../example/demo.story.ts'];
-  if (preferred && asStory((preferred as any).story)) {
-    resolved = (preferred as any).story as Story;
+  if (preferred && asStory((preferred as Record<string, unknown>)['story'])) {
+    resolved = (preferred as Record<string, unknown>)['story'] as StoryV2;
   } else {
     resolved = pickFirstStory(exampleModules);
   }
 }
 
-// Ultimate fallback: minimal inline demo to avoid runtime crash
+// 최후 fallback: 인라인 최소 스토리
 if (!resolved) {
   resolved = {
     title: 'Demo',
     start: 'start',
     init: {},
-    passages: {
+    scenes: {
       start: {
         id: 'start',
-        text: '시나리오 파일을 찾지 못했습니다. scenarios 폴더에 스토리를 추가하세요.',
-        choices: []
-      }
-    }
+        steps: [
+          { type: 'text', content: 'scenarios 폴더에 스토리 파일을 추가하세요.' },
+        ],
+        choices: [],
+      },
+    },
   };
 }
 
-export const currentStory: Story = resolved;
+export const currentStory: StoryV2 = resolved;
