@@ -1,11 +1,11 @@
 import type { VariableBag } from '../story/types';
 import type { ActionContext } from './context';
-import { createCustomActions } from './customActions';
+import { createCustomActions, type CustomActions } from './customActions';
 
 export type { NavigateFn, SetVarsFn, ActionContext } from './context';
+export type { CustomActions } from './customActions';
 
-/** DSL 스크립트에서 사용할 수 있는 Action 함수 집합 */
-export function createActions(ctx: ActionContext) {
+function builtInActions(ctx: ActionContext) {
   const { setVars, navigate } = ctx;
 
   function jump(sceneId: string) {
@@ -37,14 +37,19 @@ export function createActions(ctx: ActionContext) {
     inc('gold', n);
   }
 
-  const builtIn = { jump, set, inc, dec, setHeart, addHeart, setGold, addGold };
-  const custom = createCustomActions(ctx);
+  return { jump, set, inc, dec, setHeart, addHeart, setGold, addGold };
+}
 
-  // 커스텀을 먼저 두고 내장을 덮어써 — jump/set 등 내장이 항상 우선
+type BuiltInActions = ReturnType<typeof builtInActions>;
+
+/** DSL 스크립트에서 사용할 수 있는 Action 함수 집합 */
+export function createActions(ctx: ActionContext): CustomActions & BuiltInActions {
+  const custom = createCustomActions(ctx);
+  const builtIn = builtInActions(ctx);
   return { ...custom, ...builtIn };
 }
 
-export type Actions = ReturnType<typeof createActions>;
+export type Actions = CustomActions & BuiltInActions;
 
 /**
  * DSL script 코드를 vars + actions 스코프에서 실행한다.

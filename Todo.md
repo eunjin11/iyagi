@@ -188,11 +188,13 @@ show (gold >= 5): "주머니가 묵직하다."
 - [ ] `App.tsx`를 라우터 껍데기로 단순화
 
 ### 3-3. 파서 테스트 추가
-`parseDSL`은 핵심 로직이나 테스트가 없음.
+`parseDSL`·액션 스모크 테스트 도입됨 (`vitest`, `npm run test`).
 
 **작업:**
-- [ ] Vitest 설치 및 설정
-- [ ] `parseScene.test.ts` 작성 (happy path + 에러 케이스)
+- [x] Vitest 설치 및 설정 (`vitest.config.ts`, `package.json` scripts)
+- [x] `src/__test__/parseScene.test.ts` — vars, 씬/선택지(한 줄·멀티라인), `demo.story` 통합, 에러 케이스
+- [x] `src/__test__/actions.test.ts` — `runScript`, `inc`/`dec`/`set`, `jump`, 커스텀 `heal`, ReferenceError
+- [ ] (선택) `test/fixtures/*.story` 파일 분리, CI 연동
 
 ---
 
@@ -202,7 +204,6 @@ show (gold >= 5): "주머니가 묵직하다."
 - [ ] 배경 이미지 / 일러스트 지원 (`Scene`에 `image?: string` 필드)
 - [ ] 타자 효과 (텍스트가 한 글자씩 출력되는 연출)
 - [ ] BGM/효과음 지원 (`play("bgm_forest")` 액션)
-- [ ] Twine → DSL 변환 스크립트 완성 (`scripts/convert-twine.js`)
 - [ ] 스토리 DSL용 VS Code 문법 하이라이팅 확장
 
 ---
