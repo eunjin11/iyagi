@@ -8,7 +8,7 @@
 | 스토리 로드 (`current.ts`)   | ✅ `.story`만 | `scenarios/` 우선, 없으면 `example/demo.story`(init 등 옵션 하드코딩) |
 | 스토리 엔진 (`engine.ts`)    | ✅ 기본 동작  | advance / choose 중심                                                 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작  | jump, set, inc, dec 등                                                |
-| UI (`App.tsx`)               | 🔶 최소 구현  | 단일 화면, 타이틀/엔딩 분리 없음                                      |
+| UI (`App.tsx`)               | 🔶 최소 구현  | 단일 화면, 타이틀/엔딩 분리 없음; dev 변수 오버레이만 (씬 그래프 → 2-5) |
 | 세이브/로드                  | ❌ 미구현     | 스냅샷 API·UI·저장 전부 없음                                          |
 | 선택지 조건부 표시           | ✅ 구현됨     | `if (expr) "레이블" -> …`, `Choice.enabledWhen` + `evalWhen` (mathjs·AST) |
 | 스탯 표시                    | ❌ 미구현     | 디버그 오버레이만 있음                                                |
@@ -176,6 +176,33 @@ show (gold >= 5): "주머니가 묵직하다."
 
 - **2-1** 줄 번호·에러 구조는 Langium 진단으로 상당 부분 대체 가능
 - **3-3** 테스트는 픽스처 + Langium `parseDocument` + `astToStory` 기대값 검증으로 이행
+
+### 2-5. 디버그: 씬 그래프 팝업 (노드·링크 뷰)
+
+Twine의 패시지 맵처럼 **파싱된 `Story`를 방향 그래프로 보여 주는 읽기 전용 뷰**. 저작자가 분기·순환·고립 씬을 한눈에 확인하기 위함. 실시간 `.story` 편집·역파서는 범위 밖(별도 에디터 과제).
+
+**데이터:**
+
+- 노드: `Object.keys(story.scenes)` (또는 실제 존재하는 씬 ID 집합), `story.start`는 시각적 강조
+- 간선: 각 씬의 `choices[].script` 및 `steps` 중 `type === 'script'`인 `code`에서 `jump("…")` / `jump('…')` 호출을 **정규식 등으로 정적 추출** (동적 `jump(변수)`는 그래프에 표기 불가 또는 "알 수 없음"으로 문서화)
+- `if (…) jump(…)`가 포함된 스크립트는 간선을 **조건부**(점선·별색·라벨)로 구분
+
+**UI/UX:**
+
+- `import.meta.env.DEV`에서만 노출되는 버튼 → `<dialog>` 또는 전체 화면 모달(딤, ESC·닫기)
+- 그래프 캔버스: **React Flow**(`@xyflow/react`) 또는 Cytoscape/vis-network 등 (노드 드래그·줌·미니맵 우선순위에 맞게 선택)
+- 자동 레이아웃: DAG면 **dagre** 등 계층 배치, 루프 많으면 force-directed 보조
+- (선택) 현재 플레이 중인 `sceneId`로 해당 노드 하이라이트
+- (선택) 노드 더블클릭 시 **디버그 점프** — `useStoryEngine`에 `sceneId`/`stepIndex`를 외부에서 세팅하는 API 추가 여부 검토
+
+**작업:**
+
+- [ ] `src/story/` 또는 `src/debug/` — `storyToGraph(story): { nodes; edges }` 순수 함수 + `jump` 추출 헬퍼
+- [ ] 단위 테스트 — 샘플 `story` 또는 `demo.story` 파싱 결과로 간선 개수·대상 씬 ID 기대값 검증
+- [ ] 의존성 추가 — 그래프 라이브러리 + (선택) 레이아웃 패키지
+- [ ] `App.tsx`(또는 `src/debug/StoryGraphModal.tsx`) — dev 버튼, 모달, 그래프 마운트
+- [ ] README 또는 본 항목에 **한계** 명시: 동적 `jump`, 런타임만 도달하는 분기는 정적 그래프와 불일치 가능
+- [ ] (후순위/Twine 급) 노드 배치·연결 편집이 `.story` 파일에 반영되는 **비주얼 에디터**는 별도 Phase로 쪼개기
 
 ---
 
