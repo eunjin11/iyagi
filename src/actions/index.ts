@@ -1,13 +1,8 @@
 import type { VariableBag } from '../story/types';
+import type { ActionContext } from './context';
+import { createCustomActions } from './customActions';
 
-export type NavigateFn = (sceneId: string) => void;
-export type SetVarsFn = (updater: (prev: VariableBag) => VariableBag) => void;
-
-export type ActionContext = {
-  vars: VariableBag;
-  setVars: SetVarsFn;
-  navigate: NavigateFn;
-};
+export type { NavigateFn, SetVarsFn, ActionContext } from './context';
 
 /** DSL 스크립트에서 사용할 수 있는 Action 함수 집합 */
 export function createActions(ctx: ActionContext) {
@@ -29,13 +24,24 @@ export function createActions(ctx: ActionContext) {
     setVars((prev) => ({ ...prev, [key]: (Number(prev[key]) || 0) - by }));
   }
 
-  // 편의 함수 — 자주 쓰이는 변수명을 직접 접근
-  function setHeart(v: number) { set('heart', v); }
-  function addHeart(n: number) { inc('heart', n); }
-  function setGold(v: number) { set('gold', v); }
-  function addGold(n: number) { inc('gold', n); }
+  function setHeart(v: number) {
+    set('heart', v);
+  }
+  function addHeart(n: number) {
+    inc('heart', n);
+  }
+  function setGold(v: number) {
+    set('gold', v);
+  }
+  function addGold(n: number) {
+    inc('gold', n);
+  }
 
-  return { jump, set, inc, dec, setHeart, addHeart, setGold, addGold };
+  const builtIn = { jump, set, inc, dec, setHeart, addHeart, setGold, addGold };
+  const custom = createCustomActions(ctx);
+
+  // 커스텀을 먼저 두고 내장을 덮어써 — jump/set 등 내장이 항상 우선
+  return { ...custom, ...builtIn };
 }
 
 export type Actions = ReturnType<typeof createActions>;

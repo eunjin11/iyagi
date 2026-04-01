@@ -32,7 +32,11 @@ deep {
   "금화 10개가 나뒹굴고 있다."
   choices:
     "금화를 챙긴다" -> { inc("gold", 10); jump("start") }
-    "도망친다"      -> { jump("start") }
+    "도망친다" ->
+      {
+        set("hp", 5)
+        jump("start")
+      }
 }
 
 village {

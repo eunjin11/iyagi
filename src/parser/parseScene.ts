@@ -1,4 +1,4 @@
-import type { Choice, Scene, Step, Story, VariableBag } from '../story/types';
+import type { Choice, Scene, Step, Story, VariableBag } from "../story/types";
 
 // ---------------------------------------------------------------------------
 // 공개 API
@@ -23,7 +23,11 @@ export type ParseResult = {
  *   if (heart > 0) jump("sceneB")
  *   choices:
  *     "선택지 1" -> { jump("sceneA") }
- *     "선택지 2" -> { setHeart(heart - 1); jump("sceneB") }
+ *     "선택지 2" ->
+ *       {
+ *         jump("sceneB")
+ *         set("hp", 5)
+ *       }
  * }
  * ```
  *
@@ -31,7 +35,7 @@ export type ParseResult = {
  */
 export function parseDSL(
   src: string,
-  opts?: { title?: string; start?: string; init?: VariableBag }
+  opts?: { title?: string; start?: string; init?: VariableBag },
 ): ParseResult {
   const errors: string[] = [];
   const scenes: Record<string, Scene> = {};
@@ -44,10 +48,10 @@ export function parseDSL(
     scenes[name] = scene;
   }
 
-  const firstId = sceneBlocks[0]?.name ?? 'start';
+  const firstId = sceneBlocks[0]?.name ?? "start";
 
   const story: Story = {
-    title: opts?.title ?? 'Story',
+    title: opts?.title ?? "Story",
     start: opts?.start ?? firstId,
     scenes,
     init: { ...initFromVars, ...opts?.init },
@@ -64,14 +68,20 @@ export function parseDSL(
  * 파일 맨 앞(주석·빈 줄 뒤)의 `vars:` 블록을 파싱하고, 나머지 문자열을 돌려준다.
  * 첫 `sceneName {` 줄 직전까지가 vars 영역으로 간주된다.
  */
-function extractVarsBlock(src: string, errors: string[]): { rest: string; init: VariableBag } {
+function extractVarsBlock(
+  src: string,
+  errors: string[],
+): { rest: string; init: VariableBag } {
   const init: VariableBag = {};
-  const lines = src.split('\n');
+  const lines = src.split("\n");
   let i = 0;
-  while (i < lines.length && (lines[i].trim() === '' || lines[i].trim().startsWith('//'))) {
+  while (
+    i < lines.length &&
+    (lines[i].trim() === "" || lines[i].trim().startsWith("//"))
+  ) {
     i++;
   }
-  if (i >= lines.length || lines[i].trim() !== 'vars:') {
+  if (i >= lines.length || lines[i].trim() !== "vars:") {
     return { rest: src, init: {} };
   }
 
@@ -80,7 +90,7 @@ function extractVarsBlock(src: string, errors: string[]): { rest: string; init: 
   while (i < lines.length) {
     const raw = lines[i];
     const line = raw.trim();
-    if (line === '' || line.startsWith('//')) {
+    if (line === "" || line.startsWith("//")) {
       i++;
       continue;
     }
@@ -99,13 +109,16 @@ function extractVarsBlock(src: string, errors: string[]): { rest: string; init: 
     i++;
   }
 
-  const rest = lines.slice(i).join('\n');
+  const rest = lines.slice(i).join("\n");
   return { rest, init };
 }
 
-function parseVarInitValue(raw: string, errors: string[]): number | string | boolean | undefined {
-  if (raw === 'true') return true;
-  if (raw === 'false') return false;
+function parseVarInitValue(
+  raw: string,
+  errors: string[],
+): number | string | boolean | undefined {
+  if (raw === "true") return true;
+  if (raw === "false") return false;
   if (/^-?\d+$/.test(raw)) return Number(raw);
   if (/^-?\d+\.\d+$/.test(raw) || /^-?\d*\.\d+$/.test(raw)) return Number(raw);
   const strMatch = /^"((?:[^"\\]|\\.)*)"$/.exec(raw);
@@ -133,8 +146,8 @@ function splitSceneBlocks(src: string, errors: string[]): SceneBlock[] {
     let i = openBrace + 1;
 
     while (i < src.length && depth > 0) {
-      if (src[i] === '{') depth++;
-      else if (src[i] === '}') depth--;
+      if (src[i] === "{") depth++;
+      else if (src[i] === "}") depth--;
       i++;
     }
 
@@ -154,7 +167,7 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
   const steps: Step[] = [];
   const choices: Choice[] = [];
 
-  const lines = body.split('\n');
+  const lines = body.split("\n");
   let inChoices = false;
   let i = 0;
 
@@ -163,13 +176,13 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
     const line = raw.trim();
 
     // 빈 줄 / 주석
-    if (line === '' || line.startsWith('//')) {
+    if (line === "" || line.startsWith("//")) {
       i++;
       continue;
     }
 
     // choices: 블록 시작
-    if (line === 'choices:') {
+    if (line === "choices:") {
       inChoices = true;
       i++;
       continue;
@@ -184,16 +197,87 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
         continue;
       }
 
-      // "텍스트" -> {   (멀티라인 시작)
+      // "텍스트" ->   다음 줄에 `{` … `}` (줄바꿈 스타일)
+      const arrowOnly = /^"([^"]+)"\s*->\s*$/.exec(line);
+      if (arrowOnly) {
+        const text = arrowOnly[1];
+        let j = i + 1;
+        while (
+          j < lines.length &&
+          (lines[j].trim() === "" || lines[j].trim().startsWith("//"))
+        ) {
+          j++;
+        }
+        if (j >= lines.length) {
+          errors.push(`Scene "${id}": 선택지 "${text}" -> 뒤에 { 가 없음`);
+          i++;
+          continue;
+        }
+        const openTrim = lines[j].trim();
+        let k: number;
+        let script: string;
+
+        if (openTrim === "{") {
+          const scriptLines: string[] = [];
+          k = j + 1;
+          while (k < lines.length) {
+            const inner = lines[k].trim();
+            if (inner === "}") {
+              k++;
+              break;
+            }
+            scriptLines.push(inner);
+            k++;
+          }
+          script = scriptLines.join("\n").trim();
+        } else if (openTrim.startsWith("{")) {
+          const rest = openTrim.slice(1);
+          const closeOnSame = rest.indexOf("}");
+          if (closeOnSame !== -1) {
+            script = rest.slice(0, closeOnSame).trim();
+            k = j + 1;
+          } else {
+            const scriptLines: string[] = [];
+            const first = rest.trim();
+            if (first) scriptLines.push(first);
+            k = j + 1;
+            while (k < lines.length) {
+              const inner = lines[k].trim();
+              if (inner === "}") {
+                k++;
+                break;
+              }
+              scriptLines.push(inner);
+              k++;
+            }
+            script = scriptLines.join("\n").trim();
+          }
+        } else {
+          errors.push(
+            `Scene "${id}": 선택지 "${text}" -> 다음 줄은 '{' 로 시작해야 함 (${openTrim.slice(0, 40)})`,
+          );
+          i++;
+          continue;
+        }
+
+        choices.push({ text, script });
+        i = k;
+        continue;
+      }
+
+      // "텍스트" -> {   (멀티라인 시작, 같은 줄에 {)
       const multiStart = /^"([^"]+)"\s*->\s*\{/.exec(line);
       if (multiStart) {
         const text = multiStart[1];
         // 같은 줄에서 닫히는지 확인
         const afterBrace = line.slice(multiStart[0].length);
-        const closingIdx = afterBrace.indexOf('}');
+        const closingIdx = afterBrace.indexOf("}");
         if (closingIdx !== -1) {
           // 한 줄에서 열고 닫힘 — 이미 singleLine에서 처리됐어야 하지만 안전망
-          choices.push({ text, script: afterBrace.slice(0, closingIdx).trim() });
+          choices.push({
+            text,
+            script: afterBrace.slice(0, closingIdx).trim(),
+          });
           i++;
           continue;
         }
@@ -203,11 +287,14 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
         i++;
         while (i < lines.length) {
           const inner = lines[i].trim();
-          if (inner === '}') { i++; break; }
+          if (inner === "}") {
+            i++;
+            break;
+          }
           scriptLines.push(inner);
           i++;
         }
-        choices.push({ text, script: scriptLines.join('\n').trim() });
+        choices.push({ text, script: scriptLines.join("\n").trim() });
         continue;
       }
 
@@ -219,13 +306,13 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
     // text step: "..."
     const textMatch = /^"((?:[^"\\]|\\.)*)"$/.exec(line);
     if (textMatch) {
-      steps.push({ type: 'text', content: unescapeString(textMatch[1]) });
+      steps.push({ type: "text", content: unescapeString(textMatch[1]) });
       i++;
       continue;
     }
 
     // script step: 나머지 모든 것
-    steps.push({ type: 'script', code: line });
+    steps.push({ type: "script", code: line });
     i++;
   }
 
@@ -245,5 +332,5 @@ function matchChoiceSingleLine(line: string): Choice | null {
 }
 
 function unescapeString(s: string): string {
-  return s.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  return s.replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
 }

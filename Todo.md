@@ -13,6 +13,7 @@
 | 선택지 조건부 표시 | ❌ 미구현 | gold >= 1 같은 조건 처리 안 됨 |
 | 스탯 표시 | ❌ 미구현 | 디버그 오버레이만 있음 |
 | 백엔드 / 클라우드 | ❌ 미구현 | 계획: Fastify + GraphQL Yoga (+ Relay 프론트) |
+| 프레임워크 / 확장 | 🔶 초기 | `customActions` 패턴 있음 → 공개 API·패키지 경계는 Phase 6 |
 
 ---
 
@@ -244,6 +245,35 @@ show (gold >= 5): "주머니가 묵직하다."
 
 ---
 
+## Phase 6 — 프레임워크 설계 · 확장 API
+
+**목표:** 엔진을 **재사용 가능한 코어**로 두고, 개발자(게임 제작자)가 `customActions` 등을 **공식 확장 지점**으로 등록해 쓰는 구조. 지금 레포의 `createCustomActions(ctx)` 병합 방향을 유지하되, **공개 API·패키지 경계·문서**를 고정한다.
+
+### 6-1. 공개 API 고정
+- [ ] 진입 형태 결정: 예) `createTextRpg({ story, customActions, … })` / `useStoryEngine` 옵션에 `createCustomActions` 주입
+- [ ] 안정적으로 export할 타입 목록: `Story`, `ActionContext`, `ParseResult`, 훅 시그니처 등
+- [ ] **충돌 정책** 문서화: 내장 액션(`jump`, `set` …) vs 커스텀 동일 이름 시 우선순위(현재: 내장 우선)
+
+### 6-2. 확장 지점 (액션 외 여지)
+- [ ] **커스텀 액션:** `(ctx: ActionContext) => Record<string, Function>` 단일 팩토리 유지 또는 `plugins[]` / 네임스페이스 옵션
+- [ ] (선택) `defineActions({ … })` 류 헬퍼로 타입 추론·자동완성 개선
+- [ ] (후순위) 테마 / HUD 슬롯 / 라우트 훅 등 “호스트가 바꿀 수 있는 지점” 목록만 잡아 두기
+
+### 6-3. 패키지·경계 (모노레포 또는 npm)
+- [ ] **`@…/core`** (또는 `packages/core`): `parseDSL`, `runScript`, `useStoryEngine`, 타입 — **UI·스토리 로드 없음**
+- [ ] **`@…/react`** (선택): 현재 `App` 수준 뷰 컴포넌트
+- [ ] **호스트 앱:** `.story` 로드(`glob`/`fetch`), `currentStory` 조립, **프로젝트 전용 `customActions.ts`**
+- [ ] 버전 정책(semver)과 브레이킹 변경 시 마이그레이션 노트
+
+### 6-4. 문서 · 온보딩
+- [ ] README/가이드: “5분 튜토리얼” — 스토리 파일 + 액션 등록 + 화면 연결
+- [ ] (선택) **최소 예제 레포** 템플릿 `create-text-rpg` 등
+
+### 6-5. 보안·실행 모델 (프레임워크 약관)
+- [ ] `new Function` 기반 스크립트 실행을 공식 전제로 할지, 샌드박스/대체 인터프리터 로드맵을 문서에 명시 (→ Phase 3-1과 연결)
+
+---
+
 ## 우선순위 요약
 
 ```
@@ -262,4 +292,6 @@ Phase 2-2, 3-1 (순서 무관)
 Phase 4 (여유 있을 때)
        ↓
 Phase 5 (백엔드 · Fastify · GraphQL Yoga · Relay, 단일 플레이 루프 안정 후)
+       ↓
+Phase 6 (프레임워크 API · 패키지 분리 · 문서) — 코어 기능·API 안정된 뒤 병행·추진 가능
 ```
