@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { header, title, content, card, actionRow, actionButton } from './styles/app.css';
 import { useStoryEngine } from './story/engine';
 import { currentStory } from './story/current';
@@ -8,6 +8,9 @@ function StoryView(): React.JSX.Element {
     useStoryEngine(currentStory);
 
   const isDev = import.meta.env.DEV === true;
+  const storyPanelRef = useRef<HTMLElement>(null);
+
+  const canAdvance = Boolean(currentStep);
 
   function interpolate(src: string) {
     return src.replace(/\$([a-zA-Z0-9_]+)/g, (_m, key) => {
@@ -16,6 +19,12 @@ function StoryView(): React.JSX.Element {
     });
   }
 
+  useEffect(() => {
+    const el = storyPanelRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [pastTexts.length, currentStep?.content]);
+
   return (
     <>
       <header className={header}>
@@ -23,29 +32,34 @@ function StoryView(): React.JSX.Element {
       </header>
 
       <main className={content}>
-        {/* 지나간 text들 */}
-        {pastTexts.length > 0 && (
-          <section className={card} aria-label="history" style={{ opacity: 0.5 }}>
+        {(pastTexts.length > 0 || currentStep) && (
+          <section
+            ref={storyPanelRef}
+            className={card}
+            aria-label="story"
+            onClick={canAdvance ? advance : undefined}
+            onKeyDown={(e) => {
+              if (!canAdvance) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                advance();
+              }
+            }}
+            tabIndex={canAdvance ? 0 : undefined}
+            role={canAdvance ? 'button' : undefined}
+            style={{ cursor: canAdvance ? 'pointer' : 'default' }}
+          >
             {pastTexts.map((t, i) => (
-              <div key={i} style={{ whiteSpace: 'pre-wrap', marginBottom: '0.4em' }}>
+              <div
+                key={i}
+                style={{ whiteSpace: 'pre-wrap', marginBottom: '0.75em', opacity: 0.5 }}
+              >
                 {interpolate(t)}
               </div>
             ))}
-          </section>
-        )}
-
-        {/* 현재 text step */}
-        {currentStep && (
-          <section
-            className={card}
-            aria-label="story"
-            onClick={advance}
-            style={{ cursor: 'pointer' }}
-          >
-            <div style={{ whiteSpace: 'pre-wrap' }}>{interpolate(currentStep.content)}</div>
-            <div style={{ marginTop: '1em', fontSize: '0.75em', opacity: 0.5, textAlign: 'right' }}>
-              클릭하여 계속
-            </div>
+            {currentStep && (
+              <div style={{ whiteSpace: 'pre-wrap' }}>{interpolate(currentStep.content)}</div>
+            )}
           </section>
         )}
 

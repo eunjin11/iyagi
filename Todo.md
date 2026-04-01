@@ -5,10 +5,10 @@
 | 레이어 | 완성도 | 비고 |
 |---|---|---|
 | DSL 파서 (`parseScene.ts`) | ✅ 기본 동작 | 에러 메시지에 줄 번호 없음 |
-| 스토리 엔진 (`engine.ts`) | ✅ 기본 동작 | getSnapshot/setSnapshot 구현됨 |
+| 스토리 엔진 (`engine.ts`) | ✅ 기본 동작 | advance / choose 중심 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작 | jump, set, inc, dec 등 |
 | UI (`App.tsx`) | 🔶 최소 구현 | 단일 화면, 타이틀/엔딩 분리 없음 |
-| 세이브/로드 | ❌ 미구현 | 엔진 API는 있으나 UI/저장 없음 |
+| 세이브/로드 | ❌ 미구현 | 스냅샷 API·UI·저장 전부 없음 |
 | 선택지 조건부 표시 | ❌ 미구현 | gold >= 1 같은 조건 처리 안 됨 |
 | 스탯 표시 | ❌ 미구현 | 디버그 오버레이만 있음 |
 | 백엔드 / 클라우드 | ❌ 미구현 | 계획: Fastify + GraphQL Yoga (+ Relay 프론트) |
@@ -34,9 +34,10 @@ choices:
 - [ ] `App.tsx` — 조건 불충족 선택지를 `aria-disabled` + 회색으로 렌더링
 
 ### 1-2. 세이브/로드 (localStorage)
-`getSnapshot` / `setSnapshot`은 이미 구현됨. UI와 저장소 연결만 필요.
+엔진에 스냅샷(`sceneId`, `stepIndex`, `vars`)을 꺼내 넣을 API가 필요하면 `getSnapshot` / `setSnapshot`(및 선택 `restart`)을 `useStoryEngine`에 다시 추가한 뒤 연동한다.
 
 **작업:**
+- [ ] `engine.ts` — 스냅샷 getter/setter(및 필요 시 `restart`) 추가
 - [ ] `useStoryEngine` 내부에 자동저장 (`useEffect` + `localStorage`) 추가
 - [ ] 앱 시작 시 저장된 스냅샷이 있으면 복원 여부 물어보기
 - [ ] 타이틀 화면에 "이어하기 / 새 게임" 버튼 추가

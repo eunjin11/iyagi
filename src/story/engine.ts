@@ -73,22 +73,6 @@ export function useStoryEngine(story: Story) {
     runScript(choice.script, vars, { vars, setVars, navigate });
   }
 
-  function restart() {
-    setSceneId(story.start);
-    setStepIndex(0);
-    setVars(story.init ?? {});
-  }
-
-  function getSnapshot() {
-    return { sceneId, stepIndex, vars: { ...vars } };
-  }
-
-  function setSnapshot(snap: { sceneId: string; stepIndex: number; vars: VariableBag }) {
-    setSceneId(snap.sceneId);
-    setStepIndex(snap.stepIndex);
-    setVars(snap.vars);
-  }
-
   return {
     story,
     scene,
@@ -99,8 +83,5 @@ export function useStoryEngine(story: Story) {
     vars,
     advance,
     choose,
-    restart,
-    getSnapshot,
-    setSnapshot,
   };
 }

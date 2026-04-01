@@ -42,26 +42,15 @@ export type Actions = ReturnType<typeof createActions>;
 
 /**
  * DSL script 코드를 vars + actions 스코프에서 실행한다.
- * jump() 호출 여부를 반환값으로 제공하기 위해 navigate 호출 감지.
+ * jump()는 ctx.navigate를 호출한다.
  */
-export function runScript(
-  code: string,
-  vars: VariableBag,
-  ctx: ActionContext
-): { jumped: boolean } {
-  let jumped = false;
-  const wrappedNavigate: NavigateFn = (id) => {
-    jumped = true;
-    ctx.navigate(id);
-  };
-  const wrappedActions = createActions({ ...ctx, navigate: wrappedNavigate });
+export function runScript(code: string, vars: VariableBag, ctx: ActionContext): void {
+  const actions = createActions(ctx);
 
-  const keys = [...Object.keys(vars), ...Object.keys(wrappedActions)];
-  const values = [...Object.values(vars), ...Object.values(wrappedActions)];
+  const keys = [...Object.keys(vars), ...Object.keys(actions)];
+  const values = [...Object.values(vars), ...Object.values(actions)];
 
   // eslint-disable-next-line no-new-func
   const fn = new Function(...keys, code);
   fn(...values);
-
-  return { jumped };
 }

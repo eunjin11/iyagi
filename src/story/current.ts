@@ -3,6 +3,7 @@ import type { Story } from './types';
 // scenarios/ 폴더 내 .ts 파일을 모두 즉시 로드
 const scenarioModules = import.meta.glob('../scenarios/*.ts', { eager: true }) as Record<string, unknown>;
 
+/** glob로 불러온 모듈 export가 `Story` 형태인지 검사 — `pickFirstStory`에서만 사용 */
 function asStory(value: unknown): Story | undefined {
   if (
     value &&
