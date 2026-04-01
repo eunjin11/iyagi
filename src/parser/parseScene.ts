@@ -14,6 +14,10 @@ export type ParseResult = {
  *
  * 형식:
  * ```
+ * vars:
+ *   hp = 10
+ *   gold = 0
+ *
  * sceneName {
  *   "대사"
  *   if (heart > 0) jump("sceneB")
@@ -22,6 +26,8 @@ export type ParseResult = {
  *     "선택지 2" -> { setHeart(heart - 1); jump("sceneB") }
  * }
  * ```
+ *
+ * `init`은 (DSL `vars:`로 만든 맵) 위에 `opts.init`을 얹어 병합한다 — 외부 옵션이 우선.
  */
 export function parseDSL(
   src: string,
@@ -30,7 +36,8 @@ export function parseDSL(
   const errors: string[] = [];
   const scenes: Record<string, Scene> = {};
 
-  const sceneBlocks = splitSceneBlocks(src, errors);
+  const { rest, init: initFromVars } = extractVarsBlock(src, errors);
+  const sceneBlocks = splitSceneBlocks(rest, errors);
 
   for (const { name, body } of sceneBlocks) {
     const scene = parseSceneBody(name, body, errors);
@@ -43,7 +50,7 @@ export function parseDSL(
     title: opts?.title ?? 'Story',
     start: opts?.start ?? firstId,
     scenes,
-    init: opts?.init,
+    init: { ...initFromVars, ...opts?.init },
   };
 
   return { story, errors };
@@ -52,6 +59,60 @@ export function parseDSL(
 // ---------------------------------------------------------------------------
 // 내부 파싱 로직
 // ---------------------------------------------------------------------------
+
+/**
+ * 파일 맨 앞(주석·빈 줄 뒤)의 `vars:` 블록을 파싱하고, 나머지 문자열을 돌려준다.
+ * 첫 `sceneName {` 줄 직전까지가 vars 영역으로 간주된다.
+ */
+function extractVarsBlock(src: string, errors: string[]): { rest: string; init: VariableBag } {
+  const init: VariableBag = {};
+  const lines = src.split('\n');
+  let i = 0;
+  while (i < lines.length && (lines[i].trim() === '' || lines[i].trim().startsWith('//'))) {
+    i++;
+  }
+  if (i >= lines.length || lines[i].trim() !== 'vars:') {
+    return { rest: src, init: {} };
+  }
+
+  i++;
+  const assignRe = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$/;
+  while (i < lines.length) {
+    const raw = lines[i];
+    const line = raw.trim();
+    if (line === '' || line.startsWith('//')) {
+      i++;
+      continue;
+    }
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*\s*\{/.test(line)) break;
+
+    const m = assignRe.exec(line);
+    if (!m) {
+      errors.push(`vars: 줄을 해석할 수 없음: ${line}`);
+      i++;
+      continue;
+    }
+    const name = m[1];
+    const rawVal = m[2].trim();
+    const parsed = parseVarInitValue(rawVal, errors);
+    if (parsed !== undefined) init[name] = parsed;
+    i++;
+  }
+
+  const rest = lines.slice(i).join('\n');
+  return { rest, init };
+}
+
+function parseVarInitValue(raw: string, errors: string[]): number | string | boolean | undefined {
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  if (/^-?\d+$/.test(raw)) return Number(raw);
+  if (/^-?\d+\.\d+$/.test(raw) || /^-?\d*\.\d+$/.test(raw)) return Number(raw);
+  const strMatch = /^"((?:[^"\\]|\\.)*)"$/.exec(raw);
+  if (strMatch) return unescapeString(strMatch[1]);
+  errors.push(`vars: 초기값 형식을 알 수 없음: ${raw}`);
+  return undefined;
+}
 
 type SceneBlock = { name: string; body: string };
 

@@ -1,52 +1,65 @@
+import { parseDSL } from '../parser/parseScene';
 import type { Story } from './types';
 
-// scenarios/ 폴더 내 .ts 파일을 모두 즉시 로드
-const scenarioModules = import.meta.glob('../scenarios/*.ts', { eager: true }) as Record<string, unknown>;
+/** `src/scenarios/*.story` — gitignore된 로컬 시나리오 */
+const scenarioRawStories = import.meta.glob('../scenarios/*.story', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
 
-/** glob로 불러온 모듈 export가 `Story` 형태인지 검사 — `pickFirstStory`에서만 사용 */
-function asStory(value: unknown): Story | undefined {
-  if (
-    value &&
-    typeof value === 'object' &&
-    typeof (value as Story).title === 'string' &&
-    typeof (value as Story).start === 'string' &&
-    (value as Story).scenes &&
-    typeof (value as Story).scenes === 'object'
-  ) {
-    return value as Story;
-  }
-  return undefined;
+const exampleRawStories = import.meta.glob('../example/*.story', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+/** `.story` 파일 경로에서 표시용 제목 추론 (확장자·경로 제거) */
+function titleFromStoryPath(path: string): string {
+  const base = path.split('/').pop()?.replace(/\.story$/i, '') ?? 'Story';
+  if (!base) return 'Story';
+  return base.charAt(0).toUpperCase() + base.slice(1).replace(/_/g, ' ');
 }
 
-function pickFirstStory(mods: Record<string, unknown>): Story | undefined {
-  for (const mod of Object.values(mods)) {
-    if (asStory((mod as Record<string, unknown>)?.['story'])) {
-      return (mod as Record<string, unknown>)['story'] as Story;
-    }
+function storyFromRawFile(path: string, dsl: string, opts?: { title?: string; start?: string; init?: Story['init'] }): Story {
+  const { story, errors } = parseDSL(dsl, {
+    title: opts?.title ?? titleFromStoryPath(path),
+    start: opts?.start,
+    init: opts?.init,
+  });
+  if (errors.length > 0) {
+    console.warn(`[current] parse errors in ${path}:`, errors);
   }
-  for (const mod of Object.values(mods)) {
-    for (const exported of Object.values(mod as Record<string, unknown>)) {
-      const s = asStory(exported);
-      if (s) return s;
-    }
-  }
-  return undefined;
+  return story;
 }
 
-let resolved: Story | undefined = pickFirstStory(scenarioModules);
+function pickFirstRawStory(files: Record<string, string>, opts?: { title?: string; start?: string; init?: Story['init'] }): Story | undefined {
+  const entries = Object.entries(files);
+  if (entries.length === 0) return undefined;
+  entries.sort(([a], [b]) => a.localeCompare(b));
+  const [path, dsl] = entries[0]!;
+  return storyFromRawFile(path, dsl, opts);
+}
 
-// Fallback: example 폴더
-if (!resolved) {
-  const exampleModules = import.meta.glob('../example/*.ts', { eager: true }) as Record<string, unknown>;
-  const preferred = exampleModules['../example/demo.story.ts'];
-  if (preferred && asStory((preferred as Record<string, unknown>)['story'])) {
-    resolved = (preferred as Record<string, unknown>)['story'] as Story;
+let resolved: Story | undefined;
+
+if (Object.keys(scenarioRawStories).length > 0) {
+  resolved = pickFirstRawStory(scenarioRawStories);
+}
+
+if (!resolved && Object.keys(exampleRawStories).length > 0) {
+  const preferredPath = '../example/demo.story';
+  const preferredDsl = exampleRawStories[preferredPath];
+  if (typeof preferredDsl === 'string') {
+    resolved = storyFromRawFile(preferredPath, preferredDsl, {
+      title: '여행',
+      start: 'start',
+    });
   } else {
-    resolved = pickFirstStory(exampleModules);
+    resolved = pickFirstRawStory(exampleRawStories);
   }
 }
 
-// 최후 fallback: 인라인 최소 스토리
 if (!resolved) {
   resolved = {
     title: 'Demo',
@@ -56,7 +69,7 @@ if (!resolved) {
       start: {
         id: 'start',
         steps: [
-          { type: 'text', content: 'scenarios 폴더에 스토리 파일을 추가하세요.' },
+          { type: 'text', content: 'src/scenarios/ 또는 src/example/ 에 .story 파일을 추가하세요.' },
         ],
         choices: [],
       },

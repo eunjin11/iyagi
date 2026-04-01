@@ -1,6 +1,7 @@
-import { parseDSL } from "../parser/parseScene";
+vars:
+  hp = 10
+  gold = 0
 
-const dsl = `
 start {
   "여행자는 하얀 길목에 서 있다."
   "바람이 불고, 두 갈래 길이 앞에 펼쳐진다."
@@ -65,20 +66,3 @@ gameover {
   choices:
     "처음부터 다시" -> { set("hp", 10); set("gold", 0); jump("start") }
 }
-`;
-
-const { story, errors } = parseDSL(dsl, {
-  title: "여행",
-  start: "start",
-  init: { hp: 10, gold: 0 },
-});
-
-if (errors.length > 0) {
-  console.warn("[demo.story] parse errors:", errors);
-}
-console.log(
-  "[demo.story] village choices:",
-  JSON.stringify(story.scenes.village?.choices),
-);
-
-export { story };

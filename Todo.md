@@ -5,6 +5,7 @@
 | 레이어 | 완성도 | 비고 |
 |---|---|---|
 | DSL 파서 (`parseScene.ts`) | ✅ 기본 동작 | 수동 파서; Langium 전환은 Phase 2-4 |
+| 스토리 로드 (`current.ts`) | ✅ `.story`만 | `scenarios/` 우선, 없으면 `example/demo.story`(init 등 옵션 하드코딩) |
 | 스토리 엔진 (`engine.ts`) | ✅ 기본 동작 | advance / choose 중심 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작 | jump, set, inc, dec 등 |
 | UI (`App.tsx`) | 🔶 최소 구현 | 단일 화면, 타이틀/엔딩 분리 없음 |
@@ -94,7 +95,7 @@ start {
   - `varDefs` 순회하며 타입별 헬퍼 함수 동적 생성
   - 하드코딩된 `setHeart`, `addHeart`, `setGold`, `addGold` 제거
 - [ ] `engine.ts` — `runScript` / `createActions` 호출 시 `story.varDefs` 전달
-- [ ] `demo.story.ts` — `vars:` 블록 방식으로 마이그레이션, `parseDSL` opts에서 `init` 제거
+- [ ] `demo.story` — `vars:` 블록 방식으로 마이그레이션; `init`은 `current.ts`의 경로별 옵션 또는 DSL `vars:`로 통일
 
 ---
 
@@ -120,10 +121,10 @@ show (gold >= 5): "주머니가 묵직하다."
 - [ ] 엔진에서 condition 평가 후 렌더링 여부 결정
 
 ### 2-3. `scenarios/` 폴더 스토리 목록 UI
-현재 `current.ts`는 첫 번째 시나리오만 자동 로드. 여러 시나리오 선택 불가.
+현재 `current.ts`는 `*.story`만 로드하며, 여러 개일 때 첫 파일만 자동 선택된다.
 
 **작업:**
-- [ ] 타이틀 화면에서 `scenarios/` 내 모든 스토리 목록 표시
+- [ ] 타이틀 화면에서 `scenarios/` 내 모든 `.story` 목록 표시
 - [ ] 스토리 선택 → 플레이 진입
 
 ### 2-4. Langium 기반 DSL 파서 (`langium-cli`)
