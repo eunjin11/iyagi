@@ -11,6 +11,7 @@
 | 세이브/로드 | ❌ 미구현 | 엔진 API는 있으나 UI/저장 없음 |
 | 선택지 조건부 표시 | ❌ 미구현 | gold >= 1 같은 조건 처리 안 됨 |
 | 스탯 표시 | ❌ 미구현 | 디버그 오버레이만 있음 |
+| 백엔드 / 클라우드 | ❌ 미구현 | 계획: Fastify + GraphQL Yoga (+ Relay 프론트) |
 
 ---
 
@@ -77,7 +78,7 @@ start {
 예: `hp = 10` → `setHp(v)`, `addHp(n)`, `subHp(n)`
 
 **작업:**
-- [ ] `types.ts` — `VarDef` 타입 추가, `StoryV2`에 `varDefs?: VarDef[]` 필드 추가
+- [ ] `types.ts` — `VarDef` 타입 추가, `Story`에 `varDefs?: VarDef[]` 필드 추가
   ```ts
   export type VarDef = {
     name: string;
@@ -180,6 +181,44 @@ show (gold >= 5): "주머니가 묵직하다."
 
 ---
 
+## Phase 5 — 백엔드 · 클라우드 동기화 (Fastify · GraphQL Yoga · Relay)
+
+**목표:** 작업 중인 게임 스토리(DSL 또는 메타)를 서버에 저장하고, 로그인 후 다른 기기에서 이어서 편집·불러오기.
+
+### 5-1. API 서버 스캐폴딩 (Fastify + GraphQL Yoga)
+- [ ] `server/`(또는 별도 패키지)에 **Fastify** + TypeScript(또는 Node ESM) 프로젝트 추가
+- [ ] GraphQL Yoga를 Fastify에 붙이기 — 공식 연동은 `@graphql-yoga/plugin-fastify` 등 (Yoga 문서 기준)
+- [ ] `/graphql` 외 헬스체크·REST 훅은 Fastify 라우트로 확장
+- [ ] 인증은 Fastify `preHandler`/플러그인에서 처리 후 GraphQL 컨텍스트로 `user` 주입 검토
+- [ ] 개발 시 Vite `proxy` 또는 `@fastify/cors`로 프론트와 연결
+
+### 5-2. 영속 저장소 · 데이터 모델
+- [ ] DB 선택: 로컬 개발은 SQLite, 배포는 Postgres 등
+- [ ] 최소 테이블 예: `User`, `Story`(id, userId, title, dslText, updatedAt)
+- [ ] (선택) `StoryRevision` — 수정 이력·되돌리기
+
+### 5-3. 인증 · 권한
+- [ ] 회원 가입/로그인(이메일+비밀번호 또는 OAuth)
+- [ ] 세션 쿠키 또는 JWT — `saveStory` / `story` 조회 시 **본인 데이터만** 허용
+- [ ] 프론트: 로그인 상태에 따른 라우트/헤더
+
+### 5-4. GraphQL 스키마 · 리졸버 (MVP)
+- [ ] `Query`: `me`, `myStories` / `story(id)`
+- [ ] `Mutation`: `createStory`, `updateStory` (DSL 문자열 저장)
+- [ ] 나중에 플레이 세이브 동기화가 필요하면 `PlayerSave` 타입·mutation 추가 검토
+
+### 5-5. 프론트 — Relay 도입
+- [ ] `relay-compiler`, `babel-plugin-relay`(또는 Vite용 Relay 플러그인) 설정
+- [ ] `RelayEnvironmentProvider` + `fetch` 기반 네트워크 레이어
+- [ ] 첫 화면: `myStories` 목록 + `story` 상세(또는 에디터에 DSL 주입)까지 한 사이클
+- [ ] (선택) Relay 스토어를 localStorage에 직렬화 — **오프라인/새로고침 캐시용**이지 서버 저장 대체가 아님
+
+### 5-6. 배포·운영 (나중에)
+- [ ] API·DB 호스팅, `VITE_GRAPHQL_URL` 등 환경 변수
+- [ ] HTTPS, 쿠키 `SameSite`/`Secure` 정책 점검
+
+---
+
 ## 우선순위 요약
 
 ```
@@ -194,4 +233,6 @@ Phase 2-1 (파서 에러)   →  Phase 3-3 (테스트)
 Phase 2-2, 3-1 (순서 무관)
        ↓
 Phase 4 (여유 있을 때)
+       ↓
+Phase 5 (백엔드 · Fastify · GraphQL Yoga · Relay, 단일 플레이 루프 안정 후)
 ```
