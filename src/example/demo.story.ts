@@ -1,4 +1,4 @@
-import { parseDSL } from '../parser/parseScene';
+import { parseDSL } from "../parser/parseScene";
 
 const dsl = `
 start {
@@ -16,6 +16,13 @@ forest {
   choices:
     "열매를 따서 먹는다 (HP+1)" -> { inc("hp", 1); jump("start") }
     "더 깊이 들어간다 (HP-2)"   -> { dec("hp", 2); jump("deep") }
+}
+
+after_fruit {
+  if (hp <= 0) jump("gameover")
+  "맛있는 열매를 먹고 여행을 마치고 집으로 돌아간다."
+  choices:
+    "처음으로 돌아가기" -> { set("hp", 10); set("gold", 0); jump("start") }
 }
 
 deep {
@@ -36,6 +43,15 @@ village {
     "여행을 마치고 집으로 돌아간다" -> { jump("ending") }
 }
 
+going_home {
+  "맛있는 빵을 먹고 여행을 마치고 집으로 돌아간다."
+  "여행은 끝났다."
+  "금화 $gold 개를 품에 안고, HP $hp 를 간직한 채 집으로 돌아온다."
+  "즐거운 여행이었다."
+  choices:
+    "처음으로 돌아가기" -> { set("hp", 10); set("gold", 0); jump("start") }
+}
+
 ending {
   "여행은 끝났다."
   "금화 $gold 개를 품에 안고, HP $hp 를 간직한 채 집으로 돌아온다."
@@ -52,14 +68,17 @@ gameover {
 `;
 
 const { story, errors } = parseDSL(dsl, {
-  title: '여행',
-  start: 'start',
+  title: "여행",
+  start: "start",
   init: { hp: 10, gold: 0 },
 });
 
 if (errors.length > 0) {
-  console.warn('[demo.story] parse errors:', errors);
+  console.warn("[demo.story] parse errors:", errors);
 }
-console.log('[demo.story] village choices:', JSON.stringify(story.scenes.village?.choices));
+console.log(
+  "[demo.story] village choices:",
+  JSON.stringify(story.scenes.village?.choices),
+);
 
 export { story };
