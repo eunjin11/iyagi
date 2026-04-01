@@ -1,37 +1,40 @@
 export type VariableBag = Record<string, number | string | boolean>;
 
-export type ChoiceEffect =
-  | { type: 'set'; key: string; value: number | string | boolean }
-  | { type: 'inc'; key: string; by: number }
-  | { type: 'dec'; key: string; by: number };
+// ---------------------------------------------------------------------------
+// Step
+// ---------------------------------------------------------------------------
 
-export type ChoiceCondition = {
-  key: string;
-  op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
-  value?: number | string | boolean;
-};
+export type Step =
+  | { type: 'text'; content: string }
+  | { type: 'script'; code: string };
+
+// ---------------------------------------------------------------------------
+// Choice
+// ---------------------------------------------------------------------------
 
 export type Choice = {
   text: string;
-  goto: string;
-  if?: ChoiceCondition[];
-  // Any-of groups: visible if ANY group fully matches
-  ifAny?: ChoiceCondition[][];
-  do?: ChoiceEffect[];
+  /** 선택 시 실행할 JS 코드 (jump 포함) */
+  script: string;
 };
 
-export type Passage = {
+// ---------------------------------------------------------------------------
+// Scene
+// ---------------------------------------------------------------------------
+
+export type Scene = {
   id: string;
-  text: string;
+  steps: Step[];
   choices: Choice[];
-  enter?: ChoiceEffect[];
 };
 
-export type Story = {
+// ---------------------------------------------------------------------------
+// StoryV2
+// ---------------------------------------------------------------------------
+
+export type StoryV2 = {
   title: string;
   start: string;
-  passages: Record<string, Passage>;
+  scenes: Record<string, Scene>;
   init?: VariableBag;
 };
-
-
