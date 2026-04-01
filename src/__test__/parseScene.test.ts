@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseDSL } from '../parser/parseScene';
-import { evalCondition } from '../story/conditionAst';
+import { evalWhen } from '../story/evalWhen';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -71,7 +71,7 @@ s {
       expect(s.choices).toEqual([{ text: '가기', script: 'jump("u")' }]);
     });
 
-    it('선택지 if (cond) "레이블" -> { } 한 줄 → enabledWhenAst', () => {
+    it('선택지 if (cond) "레이블" -> { } 한 줄 → enabledWhen', () => {
       const { story, errors } = parseDSL(`
 s {
   choices:
@@ -82,12 +82,7 @@ s {
       expect(errors).toEqual([]);
       expect(story.scenes.s?.choices[0]).toMatchObject({
         text: '빵',
-        enabledWhenAst: {
-          kind: 'binary',
-          op: '>=',
-          left: { kind: 'var', name: 'gold' },
-          right: { kind: 'lit', value: 1 },
-        },
+        enabledWhen: 'gold>=1',
       });
       expect(story.scenes.s?.choices[1]).toEqual({ text: '길', script: 'jump("x")' });
     });
@@ -133,12 +128,7 @@ s {
       expect(errors).toEqual([]);
       expect(story.scenes.s?.choices[0]).toMatchObject({
         text: '도망',
-        enabledWhenAst: {
-          kind: 'binary',
-          op: '<',
-          left: { kind: 'var', name: 'hp' },
-          right: { kind: 'lit', value: 3 },
-        },
+        enabledWhen: 'hp < 3',
       });
       expect(story.scenes.s?.choices[0]?.script).toContain('jump("safe")');
     });
@@ -174,30 +164,25 @@ s {
       expect(steps?.[2]).toEqual({ type: 'script', code: 'inc("hp", 1)' });
     });
 
-    it('village: 빵은 if(gold>=1)·evalCondition·다른 선택지는 조건 없음', () => {
+    it('village: 빵은 if(gold>=1)·evalWhen·다른 선택지는 조건 없음', () => {
       const { story, errors } = parseDSL(demoStorySource(), { title: '여행', start: 'start' });
       expect(errors).toEqual([]);
       const village = story.scenes.village!;
       expect(village.choices).toHaveLength(3);
 
       const bread = village.choices.find((c) => c.text === '빵을 산다');
-      expect(bread?.enabledWhenAst).toEqual({
-        kind: 'binary',
-        op: '>=',
-        left: { kind: 'var', name: 'gold' },
-        right: { kind: 'lit', value: 1 },
-      });
+      expect(bread?.enabledWhen).toBe('gold >= 1');
       expect(bread?.script).toContain('jump("going_home")');
 
       const varsPoor = { hp: 10, gold: 0 };
       const varsRich = { hp: 10, gold: 1 };
-      expect(evalCondition(bread!.enabledWhenAst!, varsPoor)).toBe(false);
-      expect(evalCondition(bread!.enabledWhenAst!, varsRich)).toBe(true);
+      expect(evalWhen(bread!.enabledWhen!, varsPoor)).toBe(false);
+      expect(evalWhen(bread!.enabledWhen!, varsRich)).toBe(true);
 
       const road = village.choices.find((c) => c.text === '다시 길로 나온다');
       const end = village.choices.find((c) => c.text === '여행을 마치고 집으로 돌아간다');
-      expect(road?.enabledWhenAst).toBeUndefined();
-      expect(end?.enabledWhenAst).toBeUndefined();
+      expect(road?.enabledWhen).toBeUndefined();
+      expect(end?.enabledWhen).toBeUndefined();
     });
   });
 

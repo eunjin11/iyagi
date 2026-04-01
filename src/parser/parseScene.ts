@@ -1,5 +1,5 @@
 import type { Choice, Scene, Step, Story, VariableBag } from "../story/types";
-import { parseCondition } from "./parseCondition";
+import { assertWhenExprParses } from "../story/evalWhen";
 
 // ---------------------------------------------------------------------------
 // 공개 API
@@ -348,12 +348,14 @@ function choiceFromParts(
 ): Choice {
   const w = enabledWhenRaw?.trim();
   if (!w) return { text, script };
-  const r = parseCondition(w);
-  if (!r.ok) {
-    errors.push(`Scene "${sceneId}": 선택 조건 파싱 실패 — ${r.error}: ${w}`);
-    return { text, script, enabledWhenAst: { kind: 'lit', value: false } };
+  try {
+    assertWhenExprParses(w);
+    return { text, script, enabledWhen: w };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    errors.push(`Scene "${sceneId}": 선택 조건 파싱 실패 — ${msg}: ${w}`);
+    return { text, script, enabledWhen: "false" };
   }
-  return { text, script, enabledWhenAst: r.ast };
 }
 
 /** `if (조건) "레이블" -> { script }` 한 줄 (스크립트 본문은 같은 줄에서 닫힘). */

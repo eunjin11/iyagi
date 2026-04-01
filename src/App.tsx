@@ -1,15 +1,15 @@
 import React, { useEffect, useRef } from "react";
+import { evalWhen } from "./story/evalWhen";
+import { currentStory } from "./story/current";
+import { useStoryEngine } from "./story/engine";
 import {
+  actionButton,
+  actionRow,
+  card,
+  content,
   header,
   title,
-  content,
-  card,
-  actionRow,
-  actionButton,
 } from "./styles/app.css";
-import { evalCondition, formatConditionAst } from "./story/conditionAst";
-import { useStoryEngine } from "./story/engine";
-import { currentStory } from "./story/current";
 
 function StoryView(): React.JSX.Element {
   const {
@@ -98,7 +98,7 @@ function StoryView(): React.JSX.Element {
           <nav className={actionRow} aria-label="actions">
             {choices.map((c, idx) => {
               const enabled =
-                !c.enabledWhenAst || evalCondition(c.enabledWhenAst, vars);
+                !c.enabledWhen || evalWhen(c.enabledWhen, vars);
               return (
                 <button
                   key={idx}
@@ -106,8 +106,8 @@ function StoryView(): React.JSX.Element {
                   className={actionButton}
                   disabled={!enabled}
                   title={
-                    !enabled && c.enabledWhenAst
-                      ? `조건 불충족: ${formatConditionAst(c.enabledWhenAst)}`
+                    !enabled && c.enabledWhen
+                      ? `조건 불충족: ${c.enabledWhen}`
                       : undefined
                   }
                   aria-disabled={!enabled}
