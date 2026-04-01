@@ -1,16 +1,16 @@
-import type { Choice, Scene, Step, StoryV2, VariableBag } from '../story/types';
+import type { Choice, Scene, Step, Story, VariableBag } from '../story/types';
 
 // ---------------------------------------------------------------------------
 // 공개 API
 // ---------------------------------------------------------------------------
 
 export type ParseResult = {
-  story: StoryV2;
+  story: Story;
   errors: string[];
 };
 
 /**
- * DSL 텍스트 전체를 파싱해 StoryV2를 반환한다.
+ * DSL 텍스트 전체를 파싱해 Story를 반환한다.
  *
  * 형식:
  * ```
@@ -39,7 +39,7 @@ export function parseDSL(
 
   const firstId = sceneBlocks[0]?.name ?? 'start';
 
-  const story: StoryV2 = {
+  const story: Story = {
     title: opts?.title ?? 'Story',
     start: opts?.start ?? firstId,
     scenes,

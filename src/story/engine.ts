@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Choice, Scene, StoryV2, VariableBag } from './types';
+import type { Choice, Scene, Story, VariableBag } from './types';
 import { runScript } from '../actions';
 
 // ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@ function emptyScene(id: string): Scene {
 // hook
 // ---------------------------------------------------------------------------
 
-export function useStoryEngine(story: StoryV2) {
+export function useStoryEngine(story: Story) {
   const [sceneId, setSceneId] = useState<string>(story.start);
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [vars, setVars] = useState<VariableBag>(story.init ?? {});

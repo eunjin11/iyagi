@@ -29,10 +29,10 @@ export type Scene = {
 };
 
 // ---------------------------------------------------------------------------
-// StoryV2
+// Story
 // ---------------------------------------------------------------------------
 
-export type StoryV2 = {
+export type Story = {
   title: string;
   start: string;
   scenes: Record<string, Scene>;
