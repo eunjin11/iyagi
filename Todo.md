@@ -10,7 +10,7 @@
 | Actions (`actions/index.ts`) | ✅ 기본 동작  | jump, set, inc, dec 등                                                |
 | UI (`App.tsx`)               | 🔶 최소 구현  | 단일 화면, 타이틀/엔딩 분리 없음                                      |
 | 세이브/로드                  | ❌ 미구현     | 스냅샷 API·UI·저장 전부 없음                                          |
-| 선택지 조건부 표시           | ❌ 미구현     | gold >= 1 같은 조건 처리 안 됨                                        |
+| 선택지 조건부 표시           | ✅ 구현됨     | `if (expr) "레이블" -> …`, `Choice.enabledWhen` + `evalWhen` (mathjs·AST) |
 | 스탯 표시                    | ❌ 미구현     | 디버그 오버레이만 있음                                                |
 | 백엔드 / 클라우드            | ❌ 미구현     | 계획: Fastify + GraphQL Yoga (+ Relay 프론트)                         |
 | 프레임워크 / 확장            | 🔶 초기       | `customActions` 패턴 있음 → 공개 API·패키지 경계는 Phase 6            |
@@ -19,24 +19,27 @@
 
 ## Phase 1 — 게임플레이 완성 (필수)
 
-### 1-1. 선택지 조건부 활성화
+### 1-1. 선택지 조건부 활성화 ✅ (기본 완료)
 
-선택지에 `[condition]` 구문 추가. 조건 불충족 시 비활성(회색) 표시.
+조건 불충족 시 버튼 비활성·툴팁. (`when` 문법은 제거, `if (…) "레이블"` 한 줄만 지원.)
 
 **DSL 예시:**
 
 ```
 choices:
-  "빵을 산다 [gold >= 1]" -> { dec("gold", 1); inc("hp", 2); jump("start") }
-  "그냥 둘러본다"          -> { jump("start") }
+  if (gold >= 1) "빵을 산다" -> { dec("gold", 1); inc("hp", 2); jump("start") }
+  "그냥 둘러본다" -> { jump("start") }
 ```
+
+**구현 요약:** `types.Choice.enabledWhen?: string` — 파서가 `if (...)` 안 식을 저장, `App.tsx`에서 `evalWhen`으로 평가 후 `disabled` / `aria-disabled`.
 
 **작업:**
 
-- [ ] `parseScene.ts` — Choice 타입에 `condition?: string` 필드 추가
-- [ ] `types.ts` — `Choice` 타입 업데이트
-- [ ] `engine.ts` — `choose()` 시 condition 평가, 불충족 시 차단
-- [ ] `App.tsx` — 조건 불충족 선택지를 `aria-disabled` + 회색으로 렌더링
+- [x] `parseScene.ts` — `matchIfChoiceLine`, `choiceFromParts` + 조건 문자열 검증(`assertWhenExprParses`)
+- [x] `types.ts` — `enabledWhen`
+- [x] `App.tsx` — 비활성·툴팁·클릭 차단
+- [x] `story/evalWhen.ts` — mathjs 파싱 + `==`/`!=` AST를 `seq`(===)로 치환, 문자열 리터럴 비교 지원
+- [ ] (선택) `engine.ts` — `choose()` 진입 시 `enabledWhen` 재검사(악의적 호출·미래 API 대비)
 
 ### 1-2. 세이브/로드 (localStorage)
 
@@ -60,9 +63,11 @@ choices:
 
 ### 1-4. 변수 선언 DSL + 헬퍼 함수 자동 생성
 
-현재 변수 초기값은 `parseDSL(dsl, { init: {...} })`로 DSL 외부에서 주입하고,
-`setHeart` / `addHeart` 같은 편의 함수는 `actions/index.ts`에 하드코딩되어 있음.
-이를 DSL 안에서 선언하고 헬퍼 함수를 자동 생성하는 구조로 변경.
+DSL 최상단 `vars:` 블록은 이미 파싱되어 `Story.init`에 반영됨 (`parseScene.extractVarsBlock`).
+다만 **`VarDef[]` 메타데이터·타입 추론 저장**과 **`setHp`/`addHp` 류 자동 생성**은 아직 없고,
+변수 초기값은 여전히 `parseDSL(dsl, { init: {...} })`로 외부 주입하는 경로도 병행 가능함.
+`setHeart` / `addHeart` 등 편의 함수는 `actions/index.ts`에 하드코딩된 상태.
+이를 DSL 선언 기반 자동 헬퍼로 바꾸는 것이 본 항목의 목표.
 
 **DSL 예시 (변경 후):**
 
@@ -220,8 +225,10 @@ show (gold >= 5): "주머니가 묵직하다."
 **작업:**
 
 - [x] Vitest 설치 및 설정 (`vitest.config.ts`, `package.json` scripts)
-- [x] `src/__test__/parseScene.test.ts` — vars, 씬/선택지(한 줄·멀티라인), `demo.story` 통합, 에러 케이스
+- [x] `src/__test__/parseScene.test.ts` — vars, 씬/선택지(한 줄·멀티라인), `if` 조건부 선택, `demo.story` 통합, 에러 케이스
 - [x] `src/__test__/actions.test.ts` — `runScript`, `inc`/`dec`/`set`, `jump`, 커스텀 `heal`, ReferenceError
+- [x] `src/__test__/evalWhen.test.ts` — 리터럴·비교·논리·문자열 `==` 등
+- [x] `src/__test__/storyReducer.test.ts` — 이벤트/리듀서 스모크
 - [ ] (선택) `test/fixtures/*.story` 파일 분리, CI 연동
 
 ---
@@ -319,7 +326,7 @@ show (gold >= 5): "주머니가 묵직하다."
 ```
 Phase 1-4 (vars 선언 + 헬퍼 자동생성)
        ↓
-Phase 1-1 (선택지 조건)  →  Phase 1-2 (세이브)  →  Phase 1-3 (HUD, varDefs 활용)
+Phase 1-1 (선택지 조건) ✅  →  Phase 1-2 (세이브)  →  Phase 1-3 (HUD, varDefs 활용)
        ↓
 Phase 3-2 (화면 분리)   →  Phase 2-3 (시나리오 목록 UI, 타이틀과 연동)
        ↓
