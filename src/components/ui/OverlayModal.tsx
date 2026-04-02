@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect } from "react";
+import { createPortal } from "react-dom";
 import * as css from "./overlayModal.css.ts";
 
 type Props = {
@@ -56,7 +57,7 @@ export const OverlayModal = ({
 
   const dialogLabel = ariaLabel ?? title;
 
-  return (
+  return createPortal(
     <div className={css.overlayRoot}>
       <button
         type="button"
@@ -89,6 +90,7 @@ export const OverlayModal = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

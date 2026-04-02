@@ -22,11 +22,16 @@ export const title = style({
 });
 
 export const content = style({
-  display: "grid",
-  gap: "0",
-  justifyItems: "center",
-  // 하단 고정 ‘스토리 로그 보기’ 줄 높이만큼 비워 두어 본문이 가려지지 않게 함
-  paddingBottom: "calc(52px + env(safe-area-inset-bottom, 0px))",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  width: "100%",
+  minHeight: 0,
+  alignSelf: "stretch",
+  gap: vars.space.md,
+  boxSizing: "border-box",
+  // 하단 고정 ‘스토리 로그’ 줄 높이 — 선택지 유무와 관계없이 동일 여백
+  paddingBottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
 });
 
 export const card = style({
@@ -63,7 +68,11 @@ export const choiceSlot = style({
   flexShrink: 0,
 });
 
-export const logTriggerRow = style({
+/**
+ * 스토리 로그 트리거 — 뷰포트 하단 고정(선택지 높이에 따라 문서 흐름이 바뀌지 않음).
+ * 오버레이는 `OverlayModal`에서 portal로 body에 붙음.
+ */
+export const logTriggerBar = style({
   position: "fixed",
   bottom: 0,
   left: "50%",
@@ -73,10 +82,12 @@ export const logTriggerRow = style({
   paddingTop: vars.space.xs,
   paddingLeft: vars.space.xl,
   paddingRight: vars.space.xl,
-  paddingBottom: `calc(${vars.space.xs} + env(safe-area-inset-bottom, 0px))`,
+  paddingBottom: `calc(${vars.space.lg} + env(safe-area-inset-bottom, 0px))`,
   background: vars.color.bg,
   boxSizing: "border-box",
-  zIndex: 20,
+  zIndex: 10,
+  display: "flex",
+  justifyContent: "center",
 });
 
 export const actionButton = style({

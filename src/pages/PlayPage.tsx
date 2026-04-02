@@ -72,7 +72,7 @@ const PlayPage = ({ resumeState = null }: Props) => {
           </section>
         )}
 
-        <div className={css.logTriggerRow}>
+        <div className={css.logTriggerBar}>
           <StoryLogPanel
             storyLog={storyLog}
             isDev={isDev}
