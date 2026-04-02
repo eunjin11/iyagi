@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { SavedSnapshot } from "../../story/snapshots";
 import { OverlayModal } from "../ui/OverlayModal";
-import * as modal from "../ui/overlayModal.css.ts";
 import * as css from "./gameMenu.css.ts";
+import { SavedSlotsList } from "./SavedSlotsList";
 
 type Props = {
   onSave: () => void;
@@ -19,21 +19,6 @@ export const GameMenu = ({
 }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoadOpen, setIsLoadOpen] = useState(false);
-  const [saves, setSaves] = useState<SavedSnapshot[]>([]);
-
-  useEffect(() => {
-    if (!isLoadOpen) return;
-    setSaves(listSaves());
-  }, [isLoadOpen, listSaves]);
-
-  const formatSavedAt = (ts: number) => {
-    const d = new Date(ts);
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
-    return `${mm}/${dd} ${hh}:${mi}`;
-  };
 
   return (
     <>
@@ -48,11 +33,14 @@ export const GameMenu = ({
 
       <OverlayModal
         open={isOpen}
-        onDismiss={() => setIsOpen(false)}
+        onDismiss={() => {
+          setIsOpen(false);
+          setIsLoadOpen(false);
+        }}
         title={isLoadOpen ? "불러오기" : "메뉴"}
         variant="panel"
         panelClassName={css.menuDialog}
-        ariaLabel="menu"
+        ariaLabel={isLoadOpen ? "불러오기" : "menu"}
         closeAriaLabel="close-menu"
       >
         {!isLoadOpen ? (
@@ -75,8 +63,16 @@ export const GameMenu = ({
             </div>
           </div>
         ) : (
-          <section className={modal.scrollArea} aria-label="불러오기">
-            <div style={{ marginBottom: 10 }}>
+          <SavedSlotsList
+            active={isLoadOpen}
+            listSaves={listSaves}
+            onPickSave={(s) => {
+              onLoad(s);
+              setIsLoadOpen(false);
+              setIsOpen(false);
+            }}
+            onDeleteSave={onDeleteSave}
+            topSlot={
               <button
                 type="button"
                 className={css.loadItemButton}
@@ -85,44 +81,8 @@ export const GameMenu = ({
               >
                 ← 메뉴로
               </button>
-            </div>
-            {saves.length === 0 ? (
-              <div style={{ opacity: 0.6 }}>저장된 상태가 없습니다.</div>
-            ) : (
-              saves.map((s) => (
-                <div key={s.id} className={css.saveRow}>
-                  <div className={css.saveRowLoad}>
-                    <button
-                      type="button"
-                      className={css.saveRowLoadButton}
-                      onClick={() => {
-                        onLoad(s);
-                        setIsLoadOpen(false);
-                        setIsOpen(false);
-                      }}
-                      aria-label={s.label}
-                    >
-                      <div>{s.label}</div>
-                      <div className={css.saveMeta}>
-                        {formatSavedAt(s.createdAt)}
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      className={css.deleteSaveButton}
-                      onClick={() => {
-                        onDeleteSave(s.id);
-                        setSaves(listSaves());
-                      }}
-                      aria-label={`저장 삭제: ${s.label}`}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </section>
+            }
+          />
         )}
       </OverlayModal>
     </>

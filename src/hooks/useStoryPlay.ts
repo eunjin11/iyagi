@@ -28,13 +28,27 @@ export type StoryPlay = {
   persistence: StoryPlayPersistence;
 };
 
-export function useStoryPlay(story: Story): StoryPlay {
-  const stateRef = useRef<StoryEngineState>(initialEngineState(story));
+type StoryPlayInit = { story: Story; resume: StoryEngineState | null };
+
+function initStoryPlayState({
+  story,
+  resume,
+}: StoryPlayInit): StoryEngineState {
+  return resume ?? initialEngineState(story);
+}
+
+export function useStoryPlay(
+  story: Story,
+  resumeState: StoryEngineState | null = null,
+): StoryPlay {
+  const stateRef = useRef<StoryEngineState>(
+    initStoryPlayState({ story, resume: resumeState }),
+  );
 
   const [state, dispatchReducer] = useReducer(
     (s: StoryEngineState, e: StoryEvent) => applyStoryEvent(s, e, story),
-    story,
-    initialEngineState,
+    { story, resume: resumeState } satisfies StoryPlayInit,
+    initStoryPlayState,
   );
 
   stateRef.current = state;

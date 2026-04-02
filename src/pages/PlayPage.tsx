@@ -5,11 +5,16 @@ import { StoryLogPanel } from "../components/story/StoryLogPanel";
 import { StoryPanel } from "../components/story/StoryPanel";
 import { useStoryEngine } from "../hooks/useStoryEngine";
 import { currentStory } from "../story/current";
+import type { StoryEngineState } from "../story/storyReducer";
 import { interpolateVars } from "../utils/interpolateVars";
 import * as css from "./playPage.css.ts";
 
-const PlayPage = () => {
-  const { play, saves } = useStoryEngine(currentStory);
+type Props = {
+  resumeState?: StoryEngineState | null;
+};
+
+const PlayPage = ({ resumeState = null }: Props) => {
+  const { play, saves } = useStoryEngine(currentStory, resumeState);
   const {
     story,
     currentStep,
