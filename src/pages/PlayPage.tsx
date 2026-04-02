@@ -11,6 +11,7 @@ import {
 	card,
 	content,
 	header,
+	logTriggerRow,
 	title,
 } from "./playPage.css";
 
@@ -62,12 +63,13 @@ const PlayPage = () => {
 					</section>
 				)}
 
-				<StoryLogPanel
-					className={card}
-					storyLog={storyLog}
-					isDev={isDev}
-					interpolate={interpolate}
-				/>
+				<div className={logTriggerRow}>
+					<StoryLogPanel
+						storyLog={storyLog}
+						isDev={isDev}
+						interpolate={interpolate}
+					/>
+				</div>
 			</main>
 
 			<DebugOverlay isDev={isDev} vars={vars} />

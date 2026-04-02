@@ -42,6 +42,12 @@ export const actionRow = style({
 	justifyItems: "start",
 });
 
+export const logTriggerRow = style({
+	width: "100%",
+	maxWidth: vars.size.maxContent,
+	padding: `${vars.space.xs} ${vars.space.xl}`,
+});
+
 export const actionButton = style({
 	appearance: "none",
 	background: "transparent",
