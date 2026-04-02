@@ -5,7 +5,7 @@
 | 레이어                       | 완성도        | 비고                                                                  |
 | ---------------------------- | ------------- | --------------------------------------------------------------------- |
 | DSL 파서 (`parseScene.ts`)   | ✅ 기본 동작  | 수동 파서; Langium 전환은 Phase 2-4                                   |
-| 스토리 로드 (`current.ts`)   | ✅ `.iyagi`만 | `scenarios/` 우선, 없으면 `example/demo.iyagi`(init 등 옵션 하드코딩) |
+| 스토리 로드 (`current.ts`)   | ✅ `.iyagi`만 | `scenarios/`에서 첫 파일을 사용 |
 | 스토리 엔진 (`engine.ts`)    | ✅ 기본 동작  | advance / choose 중심                                                 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작  | jump, set, inc, dec 등                                                |
 | UI (`App.tsx`)               | 🔶 최소 구현  | 단일 화면, 타이틀/엔딩 분리 없음; dev 변수 오버레이만 (씬 그래프 → 2-5) |
@@ -111,7 +111,7 @@ start {
   - `varDefs` 순회하며 타입별 헬퍼 함수 동적 생성
   - 하드코딩된 `setHeart`, `addHeart`, `setGold`, `addGold` 제거
 - [ ] `engine.ts` — `runScript` / `createActions` 호출 시 `story.varDefs` 전달
-- [ ] `demo.iyagi` — `vars:` 블록 방식으로 마이그레이션; `init`은 `current.ts`의 경로별 옵션 또는 DSL `vars:`로 통일
+- [ ] `demo.iyagi` — `vars:` 블록 방식으로 마이그레이션; `init`은 `vars:` 기반으로 통일
 
 ---
 

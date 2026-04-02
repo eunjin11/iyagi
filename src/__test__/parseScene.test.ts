@@ -8,7 +8,7 @@ import { evalWhen } from '../story/evalWhen';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function demoStorySource(): string {
-  return readFileSync(join(__dirname, '../example/demo.iyagi'), 'utf-8');
+  return readFileSync(join(__dirname, '../scenarios/demo.iyagi'), 'utf-8');
 }
 
 describe('parseDSL', () => {

@@ -1,14 +1,8 @@
 import { parseDSL } from '../parser/parseScene';
 import type { Story } from './types';
 
-/** `src/scenarios/*.iyagi` — gitignore된 로컬 시나리오 */
+/** `src/scenarios/*.iyagi` — 로컬 시나리오 */
 const scenarioRawStories = import.meta.glob('../scenarios/*.iyagi', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-const exampleRawStories = import.meta.glob('../example/*.iyagi', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -47,19 +41,6 @@ if (Object.keys(scenarioRawStories).length > 0) {
   resolved = pickFirstRawStory(scenarioRawStories);
 }
 
-if (!resolved && Object.keys(exampleRawStories).length > 0) {
-  const preferredPath = '../example/demo.iyagi';
-  const preferredDsl = exampleRawStories[preferredPath];
-  if (typeof preferredDsl === 'string') {
-    resolved = storyFromRawFile(preferredPath, preferredDsl, {
-      title: '여행',
-      start: 'start',
-    });
-  } else {
-    resolved = pickFirstRawStory(exampleRawStories);
-  }
-}
-
 if (!resolved) {
   resolved = {
     title: 'Demo',
@@ -69,7 +50,7 @@ if (!resolved) {
       start: {
         id: 'start',
         steps: [
-          { type: 'text', content: 'src/scenarios/ 또는 src/example/ 에 .iyagi 파일을 추가하세요.' },
+          { type: 'text', content: 'src/scenarios/ 에 .iyagi 파일을 추가하세요.' },
         ],
         choices: [],
       },

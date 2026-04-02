@@ -20,7 +20,7 @@ yarn build && yarn preview
 
 ## 스토리 파일 (`.iyagi`)
 
-공개 진입점은 **`parseDSL`** — 예시는 [`src/example/demo.iyagi`](src/example/demo.iyagi) 참고.
+공개 진입점은 **`parseDSL`** — 예시는 [`src/scenarios/demo.iyagi`](src/scenarios/demo.iyagi) 참고.
 
 - **`vars:`** — 초기 변수 (`hp = 10` 등). 파싱 결과는 `Story.init`에 들어가며, `parseDSL(..., { init })`로 덮어쓸 수 있음.
 - **`sceneId { ... }`** — 씬 본문
@@ -34,8 +34,8 @@ yarn build && yarn preview
 
 ## 스토리 로드
 
-- [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.iyagi`가 있으면 그중 첫 파일을, 없으면 `src/example/demo.iyagi`를 사용합니다.
-- 로컬 시나리오를 쓰려면 `src/scenarios/`에 `.iyagi`를 두면 됩니다 (환경에 따라 gitignore될 수 있음).
+- [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.iyagi`가 있으면 그중 첫 파일을 사용합니다.
+- 로컬 시나리오를 쓰려면 `src/scenarios/`에 `.iyagi`를 두면 됩니다.
 
 ## 주요 소스 구조
 
@@ -50,7 +50,7 @@ src/
     current.ts            # 어떤 .iyagi를 쓸지 선택
   actions/index.ts        # runScript, 내장 액션 + customActions
   App.tsx                 # 플레이 UI
-  example/demo.iyagi      # 샘플 시나리오
+  scenarios/demo.iyagi   # 샘플 시나리오
 ```
 
 ## 테스트
