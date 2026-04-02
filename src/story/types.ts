@@ -1,5 +1,10 @@
 export type VariableBag = Record<string, number | string | boolean>;
 
+export type VarDef = {
+	name: string;
+	init: number | string | boolean;
+};
+
 // ---------------------------------------------------------------------------
 // Step
 // ---------------------------------------------------------------------------
@@ -39,4 +44,5 @@ export type Story = {
 	start: string;
 	scenes: Record<string, Scene>;
 	init?: VariableBag;
+	varDefs?: VarDef[];
 };

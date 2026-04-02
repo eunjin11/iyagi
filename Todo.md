@@ -4,7 +4,7 @@
 
 | 레이어                       | 완성도        | 비고                                                                  |
 | ---------------------------- | ------------- | --------------------------------------------------------------------- |
-| DSL 파서 (`parseScene.ts`)   | ✅ 기본 동작  | 수동 파서; Langium 전환은 Phase 2-4                                   |
+| DSL 파서 (`parseScene.ts`)   | ✅ 기본 동작  | Langium 기반(`parseIyagi` → `astToStory`)으로 동작                    |
 | 스토리 로드 (`current.ts`)   | ✅ `.iyagi`만 | `scenarios/`에서 첫 파일을 사용 |
 | 스토리 엔진 (`engine.ts`)    | ✅ 기본 동작  | advance / choose 중심                                                 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작  | jump, set, inc, dec 등                                                |
@@ -18,6 +18,55 @@
 ---
 
 ## Phase 1 — 게임플레이 완성 (필수)
+
+### 1-4. 변수 선언 DSL + 헬퍼 함수 자동 생성 (최우선)
+
+DSL 최상단 `vars:` 블록은 이미 파싱되어 `Story.init`에 반영됨 (`src/language/astToStory.ts`).
+다만 **`VarDef[]` 메타데이터·타입 추론 저장**과 **`setHp`/`addHp` 류 자동 생성**은 아직 없고,
+변수 초기값은 `parseDSL(dsl, { init: {...} })`로 외부 주입하는 경로도 병행 가능함(외부 init 우선 병합 유지).
+`setHeart` / `addHeart` 등 편의 함수는 `actions/index.ts`에 하드코딩된 상태.
+이를 DSL 선언 기반 자동 헬퍼로 바꾸는 것이 본 항목의 목표.
+
+**DSL 예시 (변경 후):**
+
+```
+vars:
+  hp = 10
+  gold = 0
+  heart = 5
+
+start {
+  addHp(1)        // 자동 생성된 헬퍼
+  setHeart(3)     // 자동 생성된 헬퍼
+  inc("gold", 2)  // 기존 방식도 계속 동작 (하위 호환)
+  ...
+}
+```
+
+**자동 생성 규칙:**
+| 변수 타입 | 생성되는 함수 |
+|---|---|
+| `number` | `set{Name}(v)`, `add{Name}(n)`, `sub{Name}(n)` |
+| `string` | `set{Name}(v)` |
+| `boolean` | `set{Name}(v)`, `toggle{Name}()` |
+
+예: `hp = 10` → `setHp(v)`, `addHp(n)`, `subHp(n)`
+
+**작업:**
+
+- [ ] `types.ts` — `VarDef` 타입 추가, `Story`에 `varDefs?: VarDef[]` 필드 추가
+  ```ts
+  export type VarDef = {
+    name: string;
+    init: number | string | boolean;
+  };
+  ```
+- [ ] `astToStory.ts` — `vars:` 블록으로부터 `varDefs` 생성 + `init` 자동 populate (외부 `init` 옵션은 override용으로 유지)
+- [ ] `actions/index.ts` — `createActions(ctx, varDefs?)` 시그니처 변경
+  - `varDefs` 순회하며 타입별 헬퍼 함수 동적 생성
+  - 하드코딩된 `setHeart`, `addHeart`, `setGold`, `addGold` 제거
+- [ ] `runScript` / `runScriptWithResult` 호출 시 `story.varDefs` 전달
+- [ ] `demo.iyagi` — 자동 헬퍼 사용 예시 일부 반영 (기존 `inc/dec/set`도 하위호환 유지)
 
 ### 1-1. 선택지 조건부 활성화 ✅ (기본 완료)
 
@@ -58,60 +107,8 @@ choices:
 
 **작업:**
 
-- [ ] HUD 컴포넌트 구현 (hp, gold 등 상단 표시, `VarDef` 목록 기반 — 1-4와 연동)
+- [ ] HUD 컴포넌트 구현 (hp, gold 등 상단 표시, `VarDef` 목록 기반 — **1-4 완료 후**)
 - [ ] `$variable` 보간을 선택지 텍스트에도 적용 (현재 text step만 지원)
-
-### 1-4. 변수 선언 DSL + 헬퍼 함수 자동 생성
-
-DSL 최상단 `vars:` 블록은 이미 파싱되어 `Story.init`에 반영됨 (`parseScene.extractVarsBlock`).
-다만 **`VarDef[]` 메타데이터·타입 추론 저장**과 **`setHp`/`addHp` 류 자동 생성**은 아직 없고,
-변수 초기값은 여전히 `parseDSL(dsl, { init: {...} })`로 외부 주입하는 경로도 병행 가능함.
-`setHeart` / `addHeart` 등 편의 함수는 `actions/index.ts`에 하드코딩된 상태.
-이를 DSL 선언 기반 자동 헬퍼로 바꾸는 것이 본 항목의 목표.
-
-**DSL 예시 (변경 후):**
-
-```
-vars:
-  hp = 10
-  gold = 0
-  heart = 5
-
-start {
-  addHp(1)        // 자동 생성된 헬퍼
-  setHeart(3)     // 자동 생성된 헬퍼
-  inc("gold", 2)  // 기존 방식도 계속 동작 (하위 호환)
-  ...
-}
-```
-
-**자동 생성 규칙:**
-| 변수 타입 | 생성되는 함수 |
-|---|---|
-| `number` | `set{Name}(v)`, `add{Name}(n)`, `sub{Name}(n)` |
-| `string` | `set{Name}(v)` |
-| `boolean` | `set{Name}(v)`, `toggle{Name}()` |
-
-예: `hp = 10` → `setHp(v)`, `addHp(n)`, `subHp(n)`
-
-**작업:**
-
-- [ ] `types.ts` — `VarDef` 타입 추가, `Story`에 `varDefs?: VarDef[]` 필드 추가
-  ```ts
-  export type VarDef = {
-    name: string;
-    init: number | string | boolean;
-  };
-  ```
-- [ ] `parseScene.ts` — DSL 최상단 `vars:` 블록 파싱
-  - `name = value` 형태의 줄을 `VarDef[]`로 변환
-  - 숫자/문자열/불리언 타입을 초기값으로 추론
-  - 파싱된 `varDefs`로 `init` 자동 populate (외부 `init` 옵션은 override용으로 유지)
-- [ ] `actions/index.ts` — `createActions(ctx, varDefs?)` 시그니처 변경
-  - `varDefs` 순회하며 타입별 헬퍼 함수 동적 생성
-  - 하드코딩된 `setHeart`, `addHeart`, `setGold`, `addGold` 제거
-- [ ] `engine.ts` — `runScript` / `createActions` 호출 시 `story.varDefs` 전달
-- [ ] `demo.iyagi` — `vars:` 블록 방식으로 마이그레이션; `init`은 `vars:` 기반으로 통일
 
 ---
 
@@ -152,7 +149,7 @@ show (gold >= 5): "주머니가 묵직하다."
 
 ### 2-4. Langium 기반 DSL 파서 (`langium-cli`)
 
-수동 정규식 파서를 **Langium**으로 바꿔 문법을 한 곳에 모으고, 렉서/파서/AST·진단 위치를 자동 생성한다. 실행(`runScript`)과는 분리: **스크립트 줄은 JS 전체를 파싱하지 않고** 문자열(한 줄 또는 choice 블록 내)로만 잡아 기존과 같이 넘긴다.
+DSL 파서는 이미 **Langium** 기반으로 동작 중(`src/language/iyagi.langium`, `parseIyagi`, `astToStory`). 실행(`runScript`)과는 분리: **스크립트 줄은 JS 전체를 파싱하지 않고** 문자열(한 줄 또는 choice 블록 내)로만 잡아 기존과 같이 넘긴다.
 
 **스크립트 줄 규칙 (문법 설계 시):**
 
@@ -163,14 +160,11 @@ show (gold >= 5): "주머니가 묵직하다."
 
 **작업:**
 
-- [ ] 의존성: `langium`, `langium-cli`, `@types/node`(버전은 Langium 문서 권장에 맞춤)
-- [ ] `src/language/story.langium`(경로는 팀 컨벤션에 맞게) — Document, VarsBlock, Scene, SceneBody, TextLine, ChoicesBlock, ChoiceLine, **ScriptLine** 등
-- [ ] `package.json` 스크립트: `langium:generate` → 생성물은 `src/language/generated/` 등 (**git**: 커밋할지 정책 결정; 보통 생성물 커밋 또는 CI 생성)
-- [ ] `createStoryServices` + `parseDocument`로 입력 문자열 → Langium AST
-- [ ] `astToStory(ast): ParseResult` — AST 순회해 `Story` / `ParseResult.errors` 생성 (공개 API `parseDSL` 시그니처 유지하면 교체 용이)
+- [x] 의존성: `langium`, `langium-cli`
+- [x] `src/language/iyagi.langium`
+- [x] `package.json` 스크립트: `langium:generate` + `langium-config.json` → `src/language/__generated__/`
+- [x] `parseIyagi` + `astToStory`로 입력 문자열 → AST → `Story`
 - [ ] 커스텀 `ValidationRegistry` / 진단 — 알 수 없는 씬 참조, 빈 `choices:` 등
-- [ ] 기존 `parseScene.ts` 단계적 제거 또는 Langium 실패 시 폴백 제거 시점 명시
-- [ ] (선택) 하이브리드: 씬 껍데기만 Langium, 본문 줄 분류는 기존 `parseSceneBody` 로직 재사용 후 단계적으로 흡수
 
 **연계:**
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ActionContext } from "../actions/context";
 import { createActions, runScript } from "../actions/index";
+import type { VarDef } from "../story/types";
 
 function mockContext(initial: Record<string, number | string | boolean>): {
 	ctx: ActionContext;
@@ -54,9 +55,34 @@ describe("createActions + runScript", () => {
 
 	it("createActions에 heal·jump 등이 포함", () => {
 		const { ctx } = mockContext({ hp: 10 });
-		const a = createActions(ctx);
+		const a = createActions(ctx, [
+			{ name: "hp", init: 10 },
+			{ name: "gold", init: 0 },
+		]);
 		expect(typeof a.heal).toBe("function");
 		expect(typeof a.jump).toBe("function");
 		expect(typeof a.addGold).toBe("function");
+	});
+
+	it("varDefs 기반 자동 헬퍼(add/sub/set/toggle)가 vars를 갱신", () => {
+		const varDefs: VarDef[] = [
+			{ name: "hp", init: 10 },
+			{ name: "gold", init: 0 },
+			{ name: "alive", init: true },
+			{ name: "tag", init: "x" },
+		];
+		const { ctx, get } = mockContext({ hp: 10, gold: 0, alive: true, tag: "x" });
+
+		runScript("addHp(2)", { ...ctx.vars }, ctx, varDefs);
+		expect(get().hp).toBe(12);
+
+		runScript("subGold(3)", { ...get() }, ctx, varDefs);
+		expect(get().gold).toBe(-3);
+
+		runScript('setTag("y")', { ...get() }, ctx, varDefs);
+		expect(get().tag).toBe("y");
+
+		runScript("toggleAlive()", { ...get() }, ctx, varDefs);
+		expect(get().alive).toBe(false);
 	});
 });

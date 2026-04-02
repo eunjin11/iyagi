@@ -1,5 +1,5 @@
 import { assertWhenExprParses } from "../story/evalWhen";
-import type { Choice, Scene, Step, Story, VariableBag } from "../story/types";
+import type { Choice, Scene, Step, Story, VarDef, VariableBag } from "../story/types";
 import type {
 	ChoiceAction,
 	ChoiceLine,
@@ -163,6 +163,7 @@ export function astToStory(
 	const scenes: Record<string, Scene> = {};
 
 	const initFromVars: VariableBag = {};
+	const varDefs: VarDef[] = [];
 	if (isVarsBlock(ast)) {
 		for (const v of ast.vars) {
 			const parsed = parseVarValue(v.value);
@@ -171,6 +172,7 @@ export function astToStory(
 				continue;
 			}
 			initFromVars[v.name] = parsed;
+			varDefs.push({ name: v.name, init: parsed });
 		}
 	}
 
@@ -184,6 +186,7 @@ export function astToStory(
 		start: opts?.start ?? firstId,
 		scenes,
 		init: { ...initFromVars, ...opts?.init },
+		varDefs: varDefs.length > 0 ? varDefs : undefined,
 	};
 
 	return { story, errors };

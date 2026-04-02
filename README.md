@@ -33,7 +33,13 @@ yarn build && yarn preview
 
 공개 진입점은 **`parseDSL`** — 예시는 [`src/scenarios/demo.iyagi`](src/scenarios/demo.iyagi) 참고.
 
-- **`vars:`** — 초기 변수 (`hp = 10` 등). 파싱 결과는 `Story.init`에 들어가며, `parseDSL(..., { init })`로 덮어쓸 수 있음.
+- **`vars:`** — 초기 변수 (`hp = 10` 등).
+  - 파싱 결과는 `Story.init`에 들어가며, `parseDSL(..., { init })`로 덮어쓸 수 있음(외부 init 우선 병합).
+  - 동시에 `Story.varDefs`(변수 메타데이터 목록: `{ name, init }[]`)도 생성됨.
+  - `vars:`로 선언된 변수는 **스크립트에서 자동 헬퍼 함수로도 사용 가능**:
+    - `number`: `setHp(v)`, `addHp(n)`, `subHp(n)`
+    - `boolean`: `setAlive(v)`, `toggleAlive()`
+    - `string`: `setTag(v)`
 - **`sceneId { ... }`** — 씬 본문
   - **`"따옴표로 감싼 한 줄`** — 텍스트 스텝
   - **그 외 한 줄** — 스크립트 스텝 (예: `if (hp <= 0) jump("gameover")`, `inc("hp", 1)`)
@@ -105,7 +111,7 @@ const story = {
 src/
   parser/parseScene.ts    # parseDSL, .iyagi 파서
   story/
-    types.ts              # Story, Scene, Choice, Step
+    types.ts              # Story, Scene, Choice, Step (+ vars 메타: varDefs)
     engine.ts             # useStoryEngine (advance / choose)
     storyReducer.ts       # 상태 전이 (스크립트는 runScriptWithResult와 결합)
     evalWhen.ts           # 선택지 조건 평가

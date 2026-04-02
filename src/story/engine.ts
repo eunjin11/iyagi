@@ -38,9 +38,17 @@ function deriveFromState(story: Story, state: StoryEngineState) {
 	return { scene, steps, currentStep, isDone, pastTexts, choices };
 }
 
-function toReducerEvent(e: StoryEvent, vars: VariableBag): StoryReducerEvent {
+function toReducerEvent(
+	e: StoryEvent,
+	vars: VariableBag,
+	story: Story,
+): StoryReducerEvent {
 	if (e.type === "RUN_SCRIPT") {
-		const { vars: nextVars, jumpTo } = runScriptWithResult(e.code, vars);
+		const { vars: nextVars, jumpTo } = runScriptWithResult(
+			e.code,
+			vars,
+			story.varDefs,
+		);
 		return { type: "SCRIPT_DONE", context: e.context, vars: nextVars, jumpTo };
 	}
 	return e;
@@ -81,7 +89,7 @@ export function useStoryEngine(story: Story) {
 					code: e.code,
 				});
 			}
-			dispatchReducer(toReducerEvent(e, stateRef.current.vars));
+			dispatchReducer(toReducerEvent(e, stateRef.current.vars, story));
 		},
 		[pushLog],
 	);
