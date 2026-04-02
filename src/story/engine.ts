@@ -1,15 +1,12 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { runScriptWithResult } from "./runScriptWithResult";
-import type { StoryLogEntry } from "./storyLog";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import {
+  applyStoryEvent,
   initialEngineState,
   type StoryEngineState,
   type StoryEvent,
-  type StoryReducerEvent,
-  storyReducer,
 } from "./storyReducer";
 
-import type { Choice, Scene, Step, Story, VariableBag } from "./types";
+import type { Choice, Scene, Step, Story } from "./types";
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -39,65 +36,27 @@ function deriveFromState(story: Story, state: StoryEngineState) {
   return { scene, steps, currentStep, isDone, pastTexts, choices };
 }
 
-function toReducerEvent(
-  e: StoryEvent,
-  vars: VariableBag,
-  story: Story,
-): StoryReducerEvent {
-  if (e.type === "RUN_SCRIPT") {
-    const { vars: nextVars, jumpTo } = runScriptWithResult(
-      e.code,
-      vars,
-      story.varDefs,
-    );
-    return { type: "SCRIPT_DONE", context: e.context, vars: nextVars, jumpTo };
-  }
-  return e;
-}
-
 // ---------------------------------------------------------------------------
 // hook
 // ---------------------------------------------------------------------------
 
 export function useStoryEngine(story: Story) {
   const stateRef = useRef<StoryEngineState>(initialEngineState(story));
-  const prevSceneIdRef = useRef<string | null>(null);
-  const [storyLog, setStoryLog] = useState<StoryLogEntry[]>([]);
-
-  const pushLog = useCallback((entry: StoryLogEntry) => {
-    setStoryLog((prev) => [...prev, entry]);
-  }, []);
 
   const [state, dispatchReducer] = useReducer(
-    (s: StoryEngineState, e: StoryReducerEvent) => storyReducer(s, e, story),
+    (s: StoryEngineState, e: StoryEvent) => applyStoryEvent(s, e, story),
     story,
     initialEngineState,
   );
 
   stateRef.current = state;
 
-  const dispatch = useCallback(
-    (e: StoryEvent) => {
-      if (e.type === "RUN_SCRIPT" && e.context === "step") {
-        pushLog({
-          kind: "script",
-          sceneId: stateRef.current.sceneId,
-          code: e.code,
-        });
-      }
-      dispatchReducer(toReducerEvent(e, stateRef.current.vars, story));
-    },
-    [pushLog, story],
-  );
+  const dispatch = useCallback((e: StoryEvent) => {
+    dispatchReducer(e);
+  }, []);
 
   const { scene, steps, currentStep, isDone, pastTexts, choices } =
     deriveFromState(story, state);
-
-  useEffect(() => {
-    if (prevSceneIdRef.current === state.sceneId) return;
-    prevSceneIdRef.current = state.sceneId;
-    pushLog({ kind: "enterScene", sceneId: state.sceneId });
-  }, [state.sceneId, pushLog]);
 
   // script step: 대사 뒤에 오는 `inc(...)` 등은 텍스트 스텝을 TAP_ADVANCE로 지난 뒤 이 인덱스에서 실행됨
   useEffect(() => {
@@ -109,21 +68,11 @@ export function useStoryEngine(story: Story) {
   }, [dispatch, steps, state.stepIndex]);
 
   function advance() {
-    const step = steps[state.stepIndex];
-    if (step?.type === "text") {
-      pushLog({ kind: "text", sceneId: state.sceneId, content: step.content });
-    }
     dispatch({ type: "TAP_ADVANCE" });
   }
 
   function choose(choice: Choice) {
-    pushLog({
-      kind: "choice",
-      sceneId: state.sceneId,
-      text: choice.text,
-      script: choice.script,
-    });
-    dispatch({ type: "RUN_SCRIPT", context: "choice", code: choice.script });
+    dispatch({ type: "CHOOSE", choice });
   }
 
   return {
@@ -134,7 +83,7 @@ export function useStoryEngine(story: Story) {
     isDone,
     choices,
     vars: state.vars,
-    storyLog,
+    storyLog: state.storyLog,
     advance,
     choose,
   };

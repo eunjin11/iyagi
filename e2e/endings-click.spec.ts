@@ -15,7 +15,7 @@ async function advanceStoryPanelN(page: Page, n: number) {
 test.describe("e2e: click-through endings", () => {
   test("start -> going_home", async ({ page }) => {
     await startGame(page);
-    await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "여행" })).toBeVisible();
     const storyPanel = page.getByRole("button", { name: "story" });
 
     // start: 텍스트 2개 -> choices가 나오도록 2번 advance
@@ -61,7 +61,7 @@ test.describe("e2e: click-through endings", () => {
 
   test("start -> ending", async ({ page }) => {
     await startGame(page);
-    await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "여행" })).toBeVisible();
     const storyPanel = page.getByRole("button", { name: "story" });
 
     await expect(
@@ -86,7 +86,7 @@ test.describe("e2e: click-through endings", () => {
 
   test("start -> gameover", async ({ page }) => {
     await startGame(page);
-    await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "여행" })).toBeVisible();
     const storyPanel = page.getByRole("button", { name: "story" });
 
     for (let cycle = 0; cycle < 3; cycle++) {
