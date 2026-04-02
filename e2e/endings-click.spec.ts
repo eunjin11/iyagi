@@ -3,15 +3,14 @@ import { expect, type Page, test } from "@playwright/test";
 async function advanceStoryPanelN(page: Page, n: number) {
 	const storyPanel = page.getByRole("button", { name: "story" });
 	for (let i = 0; i < n; i++) {
-		// `aria-label="story"` 요소가 story-log에도 섞여서(strit mode) 본문 영역만 정확히 클릭
 		await storyPanel.click();
 	}
 }
 
 test.describe("e2e: click-through endings", () => {
 	test("start -> going_home", async ({ page }) => {
-		await page.goto("/play");
-		await expect(page.getByRole("heading", { name: "여행" })).toBeVisible();
+		await page.goto("/");
+		await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
 		const storyPanel = page.getByRole("button", { name: "story" });
 
 		// start: 텍스트 2개 -> choices가 나오도록 2번 advance
@@ -56,8 +55,8 @@ test.describe("e2e: click-through endings", () => {
 	});
 
 	test("start -> ending", async ({ page }) => {
-		await page.goto("/play");
-		await expect(page.getByRole("heading", { name: "여행" })).toBeVisible();
+		await page.goto("/");
+		await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
 		const storyPanel = page.getByRole("button", { name: "story" });
 
 		await expect(
@@ -81,8 +80,8 @@ test.describe("e2e: click-through endings", () => {
 	});
 
 	test("start -> gameover", async ({ page }) => {
-		await page.goto("/play");
-		await expect(page.getByRole("heading", { name: "여행" })).toBeVisible();
+		await page.goto("/");
+		await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
 		const storyPanel = page.getByRole("button", { name: "story" });
 
 		for (let cycle = 0; cycle < 3; cycle++) {

@@ -8,6 +8,7 @@ import {
 	type StoryReducerEvent,
 	storyReducer,
 } from "./storyReducer";
+
 import type { Choice, Scene, Step, Story, VariableBag } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -61,15 +62,10 @@ function toReducerEvent(
 export function useStoryEngine(story: Story) {
 	const stateRef = useRef<StoryEngineState>(initialEngineState(story));
 	const prevSceneIdRef = useRef<string | null>(null);
-	const storyLogRef = useRef<StoryLogEntry[]>([]);
 	const [storyLog, setStoryLog] = useState<StoryLogEntry[]>([]);
 
 	const pushLog = useCallback((entry: StoryLogEntry) => {
-		setStoryLog((prev) => {
-			const next = [...prev, entry];
-			storyLogRef.current = next;
-			return next;
-		});
+		setStoryLog((prev) => [...prev, entry]);
 	}, []);
 
 	const [state, dispatchReducer] = useReducer(
@@ -91,42 +87,7 @@ export function useStoryEngine(story: Story) {
 			}
 			dispatchReducer(toReducerEvent(e, stateRef.current.vars, story));
 		},
-		[pushLog],
-	);
-
-	const getSnapshot = useCallback((): {
-		engine: StoryEngineState;
-		storyLog: StoryLogEntry[];
-	} => {
-		const s = stateRef.current;
-		return {
-			engine: {
-				sceneId: s.sceneId,
-				stepIndex: s.stepIndex,
-				vars: { ...s.vars },
-			},
-			storyLog: [...storyLogRef.current],
-		};
-	}, []);
-
-	const setSnapshot = useCallback(
-		(snapshot: { engine: StoryEngineState; storyLog: StoryLogEntry[] }) => {
-			// enterScene 로그 중복 방지를 위해 "복원될" sceneId를 먼저 고정한다.
-			prevSceneIdRef.current = snapshot.engine.sceneId;
-
-			storyLogRef.current = [...snapshot.storyLog];
-			setStoryLog(storyLogRef.current);
-
-			dispatchReducer({
-				type: "SET_SNAPSHOT",
-				snapshot: {
-					sceneId: snapshot.engine.sceneId,
-					stepIndex: snapshot.engine.stepIndex,
-					vars: { ...snapshot.engine.vars },
-				},
-			});
-		},
-		[],
+		[pushLog, story],
 	);
 
 	const { scene, steps, currentStep, isDone, pastTexts, choices } =
@@ -176,7 +137,5 @@ export function useStoryEngine(story: Story) {
 		storyLog,
 		advance,
 		choose,
-		getSnapshot,
-		setSnapshot,
 	};
 }
