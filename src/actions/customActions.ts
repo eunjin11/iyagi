@@ -2,7 +2,7 @@ import type { ActionContext } from "./context";
 
 /** 호스트가 추가한 DSL 액션 — 함수를 늘리면 이 타입에 시그니처를 적어 주세요. */
 export type CustomActions = {
-	heal: (amount: number) => void;
+  heal: (amount: number) => void;
 };
 
 /**
@@ -12,12 +12,12 @@ export type CustomActions = {
  * 예 (demo.iyagi): `heal(3)`
  */
 export function createCustomActions(ctx: ActionContext): CustomActions {
-	function heal(amount: number) {
-		ctx.setVars((prev) => ({
-			...prev,
-			hp: (Number(prev.hp) || 0) + amount,
-		}));
-	}
+  function heal(amount: number) {
+    ctx.setVars((prev) => ({
+      ...prev,
+      hp: (Number(prev.hp) || 0) + amount,
+    }));
+  }
 
-	return { heal };
+  return { heal };
 }

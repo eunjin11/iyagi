@@ -1,49 +1,49 @@
 {
-	"name": "iyagi-lang",
-	"displayName": "iyagi",
-	"description": "Syntax highlighting for .iyagi DSL",
-	"version": "0.0.2",
-	"publisher": "local",
-	"type": "module",
-	"main": "./extension.js",
-	"activationEvents": [
-		"onLanguage:iyagi",
-		"onCommand:iyagi.formatDocument"
-	],
-	"scripts": {
-		"vsix": "yarn dlx @vscode/vsce@3.3.2 package --no-dependencies --allow-missing-repository --out dist/iyagi-lang-$(node -p \"require('./package.json').version\").vsix"
-	},
-	"engines": {
-		"vscode": "^1.90.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"contributes": {
-		"commands": [
-			{
-				"command": "iyagi.formatDocument",
-				"title": "iyagi: Format Document"
-			}
-		],
-		"languages": [
-			{
-				"id": "iyagi",
-				"aliases": [
-					"iyagi"
-				],
-				"extensions": [
-					".iyagi"
-				],
-				"configuration": "./language-configuration.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "iyagi",
-				"scopeName": "source.iyagi",
-				"path": "./syntaxes/iyagi.tmLanguage.json"
-			}
-		]
-	}
+  "name": "iyagi-lang",
+  "displayName": "iyagi",
+  "description": "Syntax highlighting for .iyagi DSL",
+  "version": "0.0.2",
+  "publisher": "local",
+  "type": "module",
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:iyagi",
+    "onCommand:iyagi.formatDocument"
+  ],
+  "scripts": {
+    "vsix": "yarn dlx @vscode/vsce@3.3.2 package --no-dependencies --allow-missing-repository --out dist/iyagi-lang-$(node -p \"require('./package.json').version\").vsix"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "iyagi.formatDocument",
+        "title": "iyagi: Format Document"
+      }
+    ],
+    "languages": [
+      {
+        "id": "iyagi",
+        "aliases": [
+          "iyagi"
+        ],
+        "extensions": [
+          ".iyagi"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "iyagi",
+        "scopeName": "source.iyagi",
+        "path": "./syntaxes/iyagi.tmLanguage.json"
+      }
+    ]
+  }
 }
