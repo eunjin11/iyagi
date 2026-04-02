@@ -1,22 +1,16 @@
 import { parseDSL } from '../parser/parseScene';
 import type { Story } from './types';
 
-/** `src/scenarios/*.story` — gitignore된 로컬 시나리오 */
-const scenarioRawStories = import.meta.glob('../scenarios/*.story', {
+/** `src/scenarios/*.iyagi` — 로컬 시나리오 */
+const scenarioRawStories = import.meta.glob('../scenarios/*.iyagi', {
   query: '?raw',
   import: 'default',
   eager: true,
 }) as Record<string, string>;
 
-const exampleRawStories = import.meta.glob('../example/*.story', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-/** `.story` 파일 경로에서 표시용 제목 추론 (확장자·경로 제거) */
+/** `.iyagi` 파일 경로에서 표시용 제목 추론 (확장자·경로 제거) */
 function titleFromStoryPath(path: string): string {
-  const base = path.split('/').pop()?.replace(/\.story$/i, '') ?? 'Story';
+  const base = path.split('/').pop()?.replace(/\.iyagi$/i, '') ?? 'Iyagi';
   if (!base) return 'Story';
   return base.charAt(0).toUpperCase() + base.slice(1).replace(/_/g, ' ');
 }
@@ -47,19 +41,6 @@ if (Object.keys(scenarioRawStories).length > 0) {
   resolved = pickFirstRawStory(scenarioRawStories);
 }
 
-if (!resolved && Object.keys(exampleRawStories).length > 0) {
-  const preferredPath = '../example/demo.story';
-  const preferredDsl = exampleRawStories[preferredPath];
-  if (typeof preferredDsl === 'string') {
-    resolved = storyFromRawFile(preferredPath, preferredDsl, {
-      title: '여행',
-      start: 'start',
-    });
-  } else {
-    resolved = pickFirstRawStory(exampleRawStories);
-  }
-}
-
 if (!resolved) {
   resolved = {
     title: 'Demo',
@@ -69,7 +50,7 @@ if (!resolved) {
       start: {
         id: 'start',
         steps: [
-          { type: 'text', content: 'src/scenarios/ 또는 src/example/ 에 .story 파일을 추가하세요.' },
+          { type: 'text', content: 'src/scenarios/ 에 .iyagi 파일을 추가하세요.' },
         ],
         choices: [],
       },

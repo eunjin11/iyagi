@@ -71,3 +71,4 @@ gameover {
   choices:
     "처음부터 다시" -> { set("hp", 10); set("gold", 0); jump("start") }
 }
+

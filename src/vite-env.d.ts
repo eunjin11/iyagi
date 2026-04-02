@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-declare module '*.story?raw' {
+declare module '*.iyagi?raw' {
   const src: string;
   export default src;
 }

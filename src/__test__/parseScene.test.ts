@@ -8,7 +8,7 @@ import { evalWhen } from '../story/evalWhen';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function demoStorySource(): string {
-  return readFileSync(join(__dirname, '../example/demo.story'), 'utf-8');
+  return readFileSync(join(__dirname, '../scenarios/demo.iyagi'), 'utf-8');
 }
 
 describe('parseDSL', () => {
@@ -134,7 +134,7 @@ s {
     });
   });
 
-  describe('demo.story 통합', () => {
+  describe('demo.iyagi 통합', () => {
     it('예제 파일이 오류 없이 파싱되고 필수 씬·init 존재', () => {
       const { story, errors } = parseDSL(demoStorySource(), {
         title: '여행',

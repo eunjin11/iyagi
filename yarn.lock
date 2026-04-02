@@ -2017,6 +2017,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"iyagi@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "iyagi@workspace:."
+  dependencies:
+    "@playwright/test": "npm:^1.59.1"
+    "@types/react": "npm:^18.3.7"
+    "@types/react-dom": "npm:^18.3.0"
+    "@vanilla-extract/css": "npm:^1.15.3"
+    "@vanilla-extract/vite-plugin": "npm:^4.0.7"
+    "@vitejs/plugin-react": "npm:^4.3.4"
+    mathjs: "npm:^15.1.1"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    react-router-dom: "npm:^6.26.2"
+    typescript: "npm:^5.6.2"
+    vite: "npm:^5.4.8"
+    vitest: "npm:^3.2.4"
+  languageName: unknown
+  linkType: soft
+
 "javascript-natural-sort@npm:^0.7.1":
   version: 0.7.1
   resolution: "javascript-natural-sort@npm:0.7.1"
@@ -2734,26 +2754,6 @@ __metadata:
   checksum: 10c0/5c65b8084799bde7a791593a1c1a45d3d6ee98182e3700b24c247b7b8f8654df4191642abbdb07ff25043d45dcff35620827c3997b88ae6c12040f64bed5076b
   languageName: node
   linkType: hard
-
-"text-rpg@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "text-rpg@workspace:."
-  dependencies:
-    "@playwright/test": "npm:^1.59.1"
-    "@types/react": "npm:^18.3.7"
-    "@types/react-dom": "npm:^18.3.0"
-    "@vanilla-extract/css": "npm:^1.15.3"
-    "@vanilla-extract/vite-plugin": "npm:^4.0.7"
-    "@vitejs/plugin-react": "npm:^4.3.4"
-    mathjs: "npm:^15.1.1"
-    react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
-    react-router-dom: "npm:^6.26.2"
-    typescript: "npm:^5.6.2"
-    vite: "npm:^5.4.8"
-    vitest: "npm:^3.2.4"
-  languageName: unknown
-  linkType: soft
 
 "tiny-emitter@npm:^2.1.0":
   version: 2.1.0

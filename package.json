@@ -1,5 +1,6 @@
 {
-  "name": "text-rpg",
+  "name": "iyagi",
+  "description": "텍스트 게임 엔진 iyagi(이야기): 스토리 DSL과 플레이 엔진",
   "private": true,
   "version": "0.0.1",
   "type": "module",
