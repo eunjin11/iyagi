@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import QuitModal from "./components/ui/QuitModal";
 import MainPage from "./pages/MainPage";
 import PlayPage from "./pages/PlayPage";
-import { appRoot } from "./styles/app.css";
+import * as css from "./styles/app.css.ts";
 
 const App = () => {
   const [screen, setScreen] = useState<"main" | "play">("main");
@@ -31,7 +31,7 @@ const App = () => {
 
   if (screen === "play") {
     return (
-      <div className={appRoot}>
+      <div className={css.appRoot}>
         <PlayPage />
         {showQuitModal && (
           <QuitModal

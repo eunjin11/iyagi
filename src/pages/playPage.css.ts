@@ -4,9 +4,13 @@ import { vars } from "../styles/theme.css";
 export const header = style({
   display: "flex",
   alignItems: "center",
-  justifyContent: "center",
+  justifyContent: "space-between",
   marginBottom: vars.space.lg,
   marginTop: vars.space.lg,
+  width: "100%",
+  maxWidth: vars.size.maxContent,
+  marginInline: "auto",
+  paddingInline: vars.space.xl,
 });
 
 export const title = style({
@@ -21,6 +25,8 @@ export const content = style({
   display: "grid",
   gap: "0",
   justifyItems: "center",
+  // 하단 고정 ‘스토리 로그 보기’ 줄 높이만큼 비워 두어 본문이 가려지지 않게 함
+  paddingBottom: "calc(52px + env(safe-area-inset-bottom, 0px))",
 });
 
 export const card = style({
@@ -42,10 +48,35 @@ export const actionRow = style({
   justifyItems: "start",
 });
 
-export const logTriggerRow = style({
+/** 선택지를 스토리 패널 쪽으로 살짝 올려 붙임 (로그 줄은 별도 고정) */
+export const choiceSlot = style({
+  position: "relative",
+  zIndex: 1,
   width: "100%",
   maxWidth: vars.size.maxContent,
-  padding: `${vars.space.xs} ${vars.space.xl}`,
+  marginTop: `calc(-1 * ${vars.space.lg})`,
+  boxSizing: "border-box",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "flex-start",
+  alignItems: "stretch",
+  flexShrink: 0,
+});
+
+export const logTriggerRow = style({
+  position: "fixed",
+  bottom: 0,
+  left: "50%",
+  transform: "translateX(-50%)",
+  width: "100%",
+  maxWidth: vars.size.maxContent,
+  paddingTop: vars.space.xs,
+  paddingLeft: vars.space.xl,
+  paddingRight: vars.space.xl,
+  paddingBottom: `calc(${vars.space.xs} + env(safe-area-inset-bottom, 0px))`,
+  background: vars.color.bg,
+  boxSizing: "border-box",
+  zIndex: 20,
 });
 
 export const actionButton = style({
