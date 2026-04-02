@@ -5,11 +5,11 @@ import "./styles/theme.css.ts";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
-	throw new Error("Root element #root not found");
+  throw new Error("Root element #root not found");
 }
 
 createRoot(rootElement).render(
-	<React.StrictMode>
-		<App />
-	</React.StrictMode>,
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );

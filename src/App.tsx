@@ -5,44 +5,44 @@ import PlayPage from "./pages/PlayPage";
 import { appRoot } from "./styles/app.css";
 
 const App = () => {
-	const [screen, setScreen] = useState<"main" | "play">("main");
-	const [showQuitModal, setShowQuitModal] = useState(false);
+  const [screen, setScreen] = useState<"main" | "play">("main");
+  const [showQuitModal, setShowQuitModal] = useState(false);
 
-	useEffect(() => {
-		if (screen !== "play") return;
-		if (typeof window === "undefined") return;
+  useEffect(() => {
+    if (screen !== "play") return;
+    if (typeof window === "undefined") return;
 
-		window.history.pushState({ game: true }, "");
+    window.history.pushState({ game: true }, "");
 
-		const handlePopstate = () => setShowQuitModal(true);
-		window.addEventListener("popstate", handlePopstate);
-		return () => window.removeEventListener("popstate", handlePopstate);
-	}, [screen]);
+    const handlePopstate = () => setShowQuitModal(true);
+    window.addEventListener("popstate", handlePopstate);
+    return () => window.removeEventListener("popstate", handlePopstate);
+  }, [screen]);
 
-	const handleConfirmQuit = () => {
-		setShowQuitModal(false);
-		setScreen("main");
-	};
+  const handleConfirmQuit = () => {
+    setShowQuitModal(false);
+    setScreen("main");
+  };
 
-	const handleCancelQuit = () => {
-		setShowQuitModal(false);
-		window.history.pushState({ game: true }, "");
-	};
+  const handleCancelQuit = () => {
+    setShowQuitModal(false);
+    window.history.pushState({ game: true }, "");
+  };
 
-	if (screen === "play") {
-		return (
-			<div className={appRoot}>
-				<PlayPage />
-				{showQuitModal && (
-					<QuitModal
-						onConfirm={handleConfirmQuit}
-						onCancel={handleCancelQuit}
-					/>
-				)}
-			</div>
-		);
-	}
-	return <MainPage onStart={() => setScreen("play")} />;
+  if (screen === "play") {
+    return (
+      <div className={appRoot}>
+        <PlayPage />
+        {showQuitModal && (
+          <QuitModal
+            onConfirm={handleConfirmQuit}
+            onCancel={handleCancelQuit}
+          />
+        )}
+      </div>
+    );
+  }
+  return <MainPage onStart={() => setScreen("play")} />;
 };
 
 export default App;
