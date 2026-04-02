@@ -3,12 +3,13 @@ import { ChoiceList } from "../components/story/ChoiceList";
 import { GameMenu } from "../components/story/GameMenu";
 import { StoryLogPanel } from "../components/story/StoryLogPanel";
 import { StoryPanel } from "../components/story/StoryPanel";
+import { useStoryEngine } from "../hooks/useStoryEngine";
 import { currentStory } from "../story/current";
-import { useStoryEngine } from "../story/engine";
 import { interpolateVars } from "../utils/interpolateVars";
 import * as css from "./playPage.css.ts";
 
 const PlayPage = () => {
+  const { play, saves } = useStoryEngine(currentStory);
   const {
     story,
     currentStep,
@@ -19,11 +20,8 @@ const PlayPage = () => {
     storyLog,
     advance,
     choose,
-    save,
-    listSaves,
-    load,
-    deleteSave,
-  } = useStoryEngine(currentStory);
+  } = play;
+  const { save, listSaves, load, deleteSave } = saves;
 
   const isDev = import.meta.env.DEV === true;
   const canAdvance = Boolean(currentStep);
