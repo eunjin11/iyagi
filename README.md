@@ -22,7 +22,7 @@ yarn build && yarn preview
 이 레포는 VSCode 확장(`iyagi-lang`)이 `.iyagi`용 포맷터를 포함하고 있어, 별도 Run-on-Save 확장 없이도 저장(`Ctrl+S`) 시 자동 포맷이 가능합니다.
 
 1. 확장 설치(로컬)
-   - `vscode-extension/iyagi-lang`을 VSCode/Cursor에서 “Run Extension”으로 실행하거나, VSIX로 설치합니다.
+   - `iyagi-vscode-extension`을 VSCode/Cursor에서 “Run Extension”으로 실행하거나, VSIX로 설치합니다.
 2. 프로젝트 전용 설정
    - `.vscode/settings.json`에 `[iyagi]` 전용 `editor.defaultFormatter` / `editor.formatOnSave`가 포함되어 있습니다.
 3. 검증

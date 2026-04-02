@@ -1,0 +1,11 @@
+{
+	"projectName": "iyagi",
+	"languages": [
+		{
+			"id": "iyagi",
+			"grammar": "src/language/iyagi.langium",
+			"fileExtensions": [".iyagi"]
+		}
+	],
+	"out": "src/language/__generated__"
+}

@@ -1,0 +1,93 @@
+{
+	"name": "iyagi",
+	"scopeName": "source.iyagi",
+	"fileTypes": ["iyagi"],
+	"patterns": [
+		{
+			"name": "comment.line.double-slash.iyagi",
+			"match": "//.*$"
+		},
+		{
+			"name": "keyword.section.vars.iyagi",
+			"match": "^\\s*vars:\\s*$"
+		},
+		{
+			"name": "keyword.section.choices.iyagi",
+			"match": "^\\s*choices:\\s*$"
+		},
+		{
+			"name": "entity.name.scene.iyagi",
+			"match": "^\\s*[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\{)"
+		},
+		{
+			"name": "keyword.control.if.iyagi",
+			"match": "\\bif\\b(?=\\s*\\()"
+		},
+		{
+			"name": "keyword.operator.arrow.iyagi",
+			"match": "->"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"name": "support.function.action.iyagi",
+			"match": "\\b(jump|inc|dec|set)\\b(?=\\s*\\()"
+		},
+		{
+			"name": "constant.language.boolean.iyagi",
+			"match": "\\b(true|false)\\b"
+		},
+		{
+			"name": "keyword.operator.logical.iyagi",
+			"match": "\\b(and|or|not)\\b"
+		},
+		{
+			"name": "keyword.operator.logical.iyagi",
+			"match": "&&|\\|\\||!"
+		},
+		{
+			"name": "keyword.operator.comparison.iyagi",
+			"match": "==|!=|<=|>=|<|>"
+		},
+		{
+			"name": "constant.numeric.iyagi",
+			"match": "\\b-?\\d+(?:\\.\\d+)?\\b"
+		},
+		{
+			"name": "variable.parameter.iyagi",
+			"match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*=)"
+		}
+	],
+	"repository": {
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.iyagi",
+					"begin": "\"",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.begin.iyagi"
+						}
+					},
+					"end": "\"",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.end.iyagi"
+						}
+					},
+					"patterns": [
+						{
+							"name": "constant.character.escape.iyagi",
+							"match": "\\\\."
+						},
+						{
+							"name": "variable.other.interpolation.iyagi",
+							"match": "\\$[a-zA-Z_][a-zA-Z0-9_]*"
+						}
+					]
+				}
+			]
+		}
+	}
+}

@@ -1,40 +1,43 @@
 {
-  "name": "iyagi",
-  "description": "텍스트 게임 엔진 iyagi(이야기): 스토리 DSL과 플레이 엔진",
-  "private": true,
-  "version": "0.0.1",
-  "type": "module",
-  "workspaces": [
-    "vscode-extension/iyagi-lang"
-  ],
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "lint": "biome lint .",
-    "format": "biome format --write .",
-    "check": "biome check .",
-    "vsix": "yarn workspace iyagi-lang vsix"
-  },
-  "dependencies": {
-    "mathjs": "^15.1.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.4.10",
-    "@playwright/test": "^1.59.1",
-    "@types/react": "^18.3.7",
-    "@types/react-dom": "^18.3.0",
-    "@vanilla-extract/css": "^1.15.3",
-    "@vanilla-extract/vite-plugin": "^4.0.7",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.6.2",
-    "vite": "^5.4.8",
-    "vitest": "^3.2.4"
-  }
+	"name": "iyagi",
+	"description": "텍스트 게임 엔진 iyagi(이야기): 스토리 DSL과 플레이 엔진",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"workspaces": [
+		"iyagi-vscode-extension"
+	],
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"preview": "vite preview",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:e2e": "playwright test",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"check": "biome check .",
+		"langium:generate": "langium generate --file langium-config.json",
+		"vsix": "yarn workspace iyagi-lang vsix"
+	},
+	"dependencies": {
+		"mathjs": "^15.1.1",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
+		"react-router-dom": "^6.26.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.10",
+		"@playwright/test": "^1.59.1",
+		"@types/react": "^18.3.7",
+		"@types/react-dom": "^18.3.0",
+		"@vanilla-extract/css": "^1.15.3",
+		"@vanilla-extract/vite-plugin": "^4.0.7",
+		"@vitejs/plugin-react": "^4.3.4",
+		"langium": "^4.2.1",
+		"langium-cli": "^4.2.0",
+		"typescript": "^5.6.2",
+		"vite": "^5.4.8",
+		"vitest": "^3.2.4"
+	}
 }

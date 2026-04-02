@@ -1,0 +1,190 @@
+import { assertWhenExprParses } from "../story/evalWhen";
+import type { Choice, Scene, Step, Story, VariableBag } from "../story/types";
+import type {
+	ChoiceAction,
+	ChoiceLine,
+	Document as IyagiDocumentAst,
+	Scene as IyagiSceneAst,
+	PlainChoice,
+} from "./__generated__/ast.js";
+import {
+	isChoiceBlock,
+	isIfChoice,
+	isInlineAction,
+	isInlineScene,
+	isMultiLineScene,
+	isScriptLine,
+	isTextLine,
+	isVarsBlock,
+} from "./__generated__/ast.js";
+
+export type AstToStoryResult = {
+	story: Story;
+	errors: string[];
+};
+
+function unquoteStringLiteral(raw: string): string {
+	// raw is `"..."` with possible escapes
+	if (raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"')) {
+		const inner = raw.slice(1, -1);
+		return inner.replace(/\\(.)/g, "$1");
+	}
+	return raw;
+}
+
+function cstLineText(
+	node: { $cstNode?: { text: string } } | undefined,
+	indent: number,
+): string {
+	const text = node?.$cstNode?.text ?? "";
+	// CST includes indentation and trailing newline; strip both.
+	const withoutNl = text.replace(/\r?\n$/, "");
+	return withoutNl.slice(indent).trimEnd();
+}
+
+function cstLineTextAuto(
+	node: { $cstNode?: { text: string } } | undefined,
+): string {
+	const text = node?.$cstNode?.text ?? "";
+	const withoutNl = text.replace(/\r?\n$/, "");
+	const m = /^ +/.exec(withoutNl);
+	const indent = m ? m[0].length : 0;
+	return withoutNl.slice(indent).trimEnd();
+}
+
+function cstBetween(
+	node: { $cstNode?: { text: string } } | undefined,
+	open: string,
+	close: string,
+): string {
+	const text = node?.$cstNode?.text ?? "";
+	const start = text.indexOf(open);
+	const end = text.lastIndexOf(close);
+	if (start === -1 || end === -1 || end <= start) return "";
+	return text.slice(start + open.length, end).trim();
+}
+
+function parseVarValue(raw: string): number | string | boolean | undefined {
+	if (typeof raw !== "string") return undefined;
+	if (raw === "true") return true;
+	if (raw === "false") return false;
+	if (/^-?\d+$/.test(raw)) return Number(raw);
+	if (/^-?\d+\.\d+$/.test(raw) || /^-?\d*\.\d+$/.test(raw)) return Number(raw);
+	// Langium value converter may already strip quotes from STRING.
+	return raw.startsWith('"') && raw.endsWith('"')
+		? unquoteStringLiteral(raw)
+		: raw;
+}
+
+function choiceScriptFromAction(action: ChoiceAction | undefined): string {
+	if (!action) return "";
+	if (isInlineAction(action)) {
+		return cstBetween(action, "{", "}"); // preserve inner text (no indentation)
+	}
+	// block actions
+	if (!("block" in action) || !action.block) return "";
+	const lines = action.block.lines.map((l) => cstLineTextAuto(l));
+	return lines.join("\n").trim();
+}
+
+function choiceFromLine(
+	line: ChoiceLine,
+	errors: string[],
+	sceneId: string,
+): Choice {
+	if (isIfChoice(line)) {
+		const enabledWhen = (line.cond.$cstNode?.text ?? "").trim();
+		try {
+			assertWhenExprParses(enabledWhen);
+		} catch {
+			errors.push(`Scene "${sceneId}": 조건식 파싱 실패: ${enabledWhen}`);
+		}
+		return {
+			text: unquoteStringLiteral(line.text),
+			enabledWhen,
+			script: choiceScriptFromAction(line.action),
+		};
+	}
+	// PlainChoice
+	const plain = line as PlainChoice;
+	return {
+		text: unquoteStringLiteral(plain.text),
+		script: choiceScriptFromAction(plain.action),
+	};
+}
+
+function sceneFromAst(scene: IyagiSceneAst, errors: string[]): Scene {
+	if (isInlineScene(scene)) {
+		const steps: Step[] = scene.texts.map((t) => ({
+			type: "text",
+			content: unquoteStringLiteral(t),
+		}));
+		return { id: scene.name, steps, choices: [] };
+	}
+
+	if (!isMultiLineScene(scene)) {
+		return {
+			id: (scene as { name?: string }).name ?? "unknown",
+			steps: [],
+			choices: [],
+		};
+	}
+
+	const steps: Step[] = [];
+	const choices: Choice[] = [];
+
+	for (const item of scene.items) {
+		if (isTextLine(item)) {
+			for (const t of item.texts) {
+				steps.push({ type: "text", content: unquoteStringLiteral(t) });
+			}
+			continue;
+		}
+		if (isScriptLine(item)) {
+			steps.push({ type: "script", code: cstLineText(item, 2) });
+			continue;
+		}
+		if (isChoiceBlock(item)) {
+			for (const c of item.choices) {
+				choices.push(choiceFromLine(c, errors, scene.name));
+			}
+		}
+	}
+
+	return { id: scene.name, steps, choices };
+}
+
+export function astToStory(
+	ast: IyagiDocumentAst,
+	parseErrors: string[],
+	opts?: { title?: string; start?: string; init?: VariableBag },
+): AstToStoryResult {
+	const errors: string[] = [...parseErrors];
+	const scenes: Record<string, Scene> = {};
+
+	const initFromVars: VariableBag = {};
+	if (isVarsBlock(ast)) {
+		for (const v of ast.vars) {
+			const parsed = parseVarValue(v.value);
+			if (parsed === undefined) {
+				errors.push(`vars: 초기값 형식을 알 수 없음: ${v.value}`);
+				continue;
+			}
+			initFromVars[v.name] = parsed;
+		}
+	}
+
+	for (const s of ast.scenes) {
+		scenes[s.name] = sceneFromAst(s, errors);
+	}
+
+	const firstId = ast.scenes[0]?.name ?? "start";
+	const story: Story = {
+		title: opts?.title ?? "Story",
+		start: opts?.start ?? firstId,
+		scenes,
+		init: { ...initFromVars, ...opts?.init },
+	};
+
+	return { story, errors };
+}

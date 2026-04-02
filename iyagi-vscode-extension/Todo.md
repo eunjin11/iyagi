@@ -1,16 +1,16 @@
 # VSCode/Cursor 확장 배포 TODO
 
-목표: `vscode-extension/iyagi-lang`을 **VS Code Marketplace**와 **Open VSX(Cursor 포함)** 모두에서 설치 가능하게 배포하고, 사용자가 “저장 시 포맷(Format on Save)”까지 쉽게 켤 수 있도록 문서를 정리한다.
+목표: `iyagi-vscode-extension`을 **VS Code Marketplace**와 **Open VSX(Cursor 포함)** 모두에서 설치 가능하게 배포하고, 사용자가 “저장 시 포맷(Format on Save)”까지 쉽게 켤 수 있도록 문서를 정리한다.
 
 ## 1) 확장 메타데이터 정리
 
-- [ ] `vscode-extension/iyagi-lang/package.json`
+- [ ] `iyagi-vscode-extension/package.json`
   - [ ] `publisher`를 실제 배포용으로 변경(본인 계정/조직)
   - [ ] `repository`, `license`, `homepage`, `bugs` 추가
   - [ ] `keywords`, `categories` 정리
   - [ ] `icon` 추가(예: `icon.png`)
   - [ ] `displayName`/`description`/`version` 정책 정리
-- [ ] `vscode-extension/iyagi-lang/README.md`(확장 전용) 추가/정리
+- [ ] `iyagi-vscode-extension/README.md`(확장 전용) 추가/정리
   - [ ] 기능: syntax highlight + formatter + `iyagi: Format Document`
   - [ ] 설정: `[iyagi].editor.defaultFormatter`, `editor.formatOnSave` 안내
 

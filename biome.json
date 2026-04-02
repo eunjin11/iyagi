@@ -6,7 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!!**/dist"]
+		"includes": ["**", "!!dist", "!!src/language/__generated__", "!!.vscode"]
 	},
 	"formatter": {
 		"enabled": true,
