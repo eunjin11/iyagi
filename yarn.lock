@@ -2108,6 +2108,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"iyagi-lang@workspace:vscode-extension/iyagi-lang":
+  version: 0.0.0-use.local
+  resolution: "iyagi-lang@workspace:vscode-extension/iyagi-lang"
+  languageName: unknown
+  linkType: soft
+
 "iyagi@workspace:.":
   version: 0.0.0-use.local
   resolution: "iyagi@workspace:."

@@ -4,6 +4,9 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "workspaces": [
+    "vscode-extension/iyagi-lang"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -13,7 +16,8 @@
     "test:e2e": "playwright test",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "vsix": "yarn workspace iyagi-lang vsix"
   },
   "dependencies": {
     "mathjs": "^15.1.1",

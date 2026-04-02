@@ -140,6 +140,57 @@ function formatChoiceLineText(text) {
   return `"${text}"`;
 }
 
+/**
+ * 씬 본문(choices 밖)에서 `"..." "..."` 처럼 같은 라인에
+ * 더블 쌍따옴표 문자열 리터럴이 연속으로 있는 경우를 처리한다.
+ *
+ * 결과가 배열이면: 라인 전체가 (whitespace로 구분된) 문자열 리터럴 시퀀스임을 의미.
+ * 결과가 null이면: 라인 전체가 문자열 리터럴 시퀀스가 아님(기존 로직으로 처리).
+ */
+function splitDoubleQuotedStringsInLine(trimmed) {
+  const parts = [];
+  let i = 0;
+
+  const len = trimmed.length;
+  while (i < len) {
+    while (i < len && /\s/.test(trimmed[i])) i++;
+    if (i >= len) break;
+
+    // Parser가 인식하는 text step은 반드시 "..." 형태이므로 여기서도 강제한다.
+    if (trimmed[i] !== '"') return null;
+
+    const start = i;
+    i++; // consume opening quote
+    let escaped = false;
+    while (i < len) {
+      const ch = trimmed[i];
+      if (escaped) {
+        escaped = false;
+        i++;
+        continue;
+      }
+      if (ch === "\\") {
+        escaped = true;
+        i++;
+        continue;
+      }
+      if (ch === '"') {
+        i++; // consume closing quote
+        parts.push(trimmed.slice(start, i));
+        break;
+      }
+      i++;
+    }
+
+    if (parts.length === 0 || parts[parts.length - 1] === trimmed.slice(start, start + 1)) {
+      // safety: couldn't find closing quote
+      return null;
+    }
+  }
+
+  return parts.length > 0 ? parts : null;
+}
+
 function formatFile(src) {
   const normalized = src.replace(/\r\n/g, "\n");
   const lines = normalized.split("\n");
@@ -428,8 +479,12 @@ function formatFile(src) {
     }
 
     // --- inside scene but outside choices ---
-    if (/^"((?:[^"\\]|\\.)*)"$/.test(trimmed)) {
-      out.push(`${INDENT_SCENE}${trimmed}`);
+    const quotedParts = splitDoubleQuotedStringsInLine(trimmed);
+    if (quotedParts) {
+      // `"a" "b"` 형태면 각각을 별도 줄로 내려준다.
+      for (const q of quotedParts) {
+        out.push(`${INDENT_SCENE}${q}`);
+      }
       i++;
       continue;
     }

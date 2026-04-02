@@ -1,0 +1,8 @@
+**
+!.vscodeignore
+!package.json
+!extension.js
+!format-iyagi.mjs
+!language-configuration.json
+!syntaxes/**
+
