@@ -72,6 +72,10 @@ globalStyle("body", {
   lineHeight: 1.75,
   WebkitFontSmoothing: "antialiased",
   MozOsxFontSmoothing: "grayscale",
+  // 텍스트 드래그·선택 방지 (스토리 탭 플레이 UX)
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  WebkitTouchCallout: "none",
 });
 
 globalStyle("button", {
