@@ -55,11 +55,14 @@ s { "x" }
 
   describe("title:", () => {
     it('title: "..." 를 Story.title로 사용 (opts.title보다 우선)', () => {
-      const { story, errors } = parseDSL(`
+      const { story, errors } = parseDSL(
+        `
 title: "여행"
 
 a { "hi" }
-`, { title: "경로에서_추론된_제목" });
+`,
+        { title: "경로에서_추론된_제목" },
+      );
       expect(errors).toEqual([]);
       expect(story.title).toBe("여행");
     });

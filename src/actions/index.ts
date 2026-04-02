@@ -47,7 +47,7 @@ function autoHelpersFromVarDefs(
         setVars((prev) => ({ ...prev, [name]: Boolean(v) }));
       };
       helpers[`toggle${Name}`] = () => {
-        setVars((prev) => ({ ...prev, [name]: !Boolean(prev[name]) }));
+        setVars((prev) => ({ ...prev, [name]: !prev[name] }));
       };
       continue;
     }

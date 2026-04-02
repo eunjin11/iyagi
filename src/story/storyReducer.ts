@@ -77,7 +77,8 @@ export function storyReducer(
       const nextBase: StoryEngineState = {
         ...state,
         vars: event.vars,
-        storyLog: logs.length > 0 ? [...state.storyLog, ...logs] : state.storyLog,
+        storyLog:
+          logs.length > 0 ? [...state.storyLog, ...logs] : state.storyLog,
       };
       if (event.jumpTo) {
         return {
