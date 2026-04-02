@@ -173,10 +173,10 @@ export function activate(context) {
           if (!isProbablyInScriptContext(prefix)) return [];
 
           const builtins = [
-            { name: "jump", snippet: 'jump("${1:sceneId}")' },
-            { name: "set", snippet: 'set("${1:key}", ${2:value})' },
-            { name: "inc", snippet: 'inc("${1:key}", ${2:1})' },
-            { name: "dec", snippet: 'dec("${1:key}", ${2:1})' },
+            { name: "jump", snippet: 'jump("\\u0024{1:sceneId}")' },
+            { name: "set", snippet: 'set("\\u0024{1:key}", \\u0024{2:value})' },
+            { name: "inc", snippet: 'inc("\\u0024{1:key}", \\u0024{2:1})' },
+            { name: "dec", snippet: 'dec("\\u0024{1:key}", \\u0024{2:1})' },
           ];
 
           const vars = parseVarsBlock(document.getText());

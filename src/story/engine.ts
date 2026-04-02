@@ -78,7 +78,6 @@ export function useStoryEngine(story: Story) {
     if (!step || step.type !== "script") return;
 
     dispatch({ type: "RUN_SCRIPT", context: "step", code: step.code });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, steps, state.stepIndex]);
 
   function advance() {

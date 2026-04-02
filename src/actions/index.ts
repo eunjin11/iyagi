@@ -117,7 +117,6 @@ export function runScript(
   const keys = [...Object.keys(vars), ...Object.keys(actions)];
   const values = [...Object.values(vars), ...Object.values(actions)];
 
-  // eslint-disable-next-line no-new-func
   const fn = new Function(...keys, code);
   fn(...values);
 }

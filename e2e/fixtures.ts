@@ -11,7 +11,7 @@ export const test = base.extend({
         window.localStorage.clear();
         window.sessionStorage.clear();
       } catch {
-        /* ignore */
+        void 0;
       }
     });
     await use(page);
