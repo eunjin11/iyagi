@@ -192,7 +192,7 @@ s {
 			const village = story.scenes.village;
 			expect(village).toBeDefined();
 			if (!village) throw new Error('scene "village" not found');
-			expect(village.choices).toHaveLength(3);
+			expect(village.choices).toHaveLength(4);
 
 			const bread = village.choices.find((c) => c.text === "빵을 산다");
 			expect(bread?.enabledWhen).toBe("gold >= 1");
@@ -205,6 +205,9 @@ s {
 			const varsRich = { hp: 10, gold: 1 };
 			expect(evalWhen(bread.enabledWhen, varsPoor)).toBe(false);
 			expect(evalWhen(bread.enabledWhen, varsRich)).toBe(true);
+
+			const heal = village.choices.find((c) => c.text === "치유사에게 간다");
+			expect(heal?.enabledWhen).toBeUndefined();
 
 			const road = village.choices.find((c) => c.text === "다시 길로 나온다");
 			const end = village.choices.find(

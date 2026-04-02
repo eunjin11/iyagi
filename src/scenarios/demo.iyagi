@@ -71,8 +71,17 @@ village {
         inc("hp", 2)
         jump("going_home")
       }
+    "치유사에게 간다" -> { jump("healer") }
     "다시 길로 나온다" -> { jump("start") }
     "여행을 마치고 집으로 돌아간다" -> { jump("ending") }
+}
+
+healer {
+  "치유사는 조용히 손을 얹는다."
+  heal(5)
+  "상처가 아물고 숨이 편안해진다. (HP+5)"
+  choices:
+    "마을로 돌아간다" -> { jump("village") }
 }
 
 going_home {

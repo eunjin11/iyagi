@@ -84,6 +84,21 @@ describe("e2e endings (engine simulation)", () => {
 	expect(parsed.errors).toEqual([]);
 	const story = parsed.story;
 
+	it("village -> healer: heal(5)로 hp가 증가", () => {
+		let s = initialEngineState(story);
+		s = chooseByText(story, s, "마을로 향한다"); // jump village
+		s = chooseByText(story, s, "치유사에게 간다"); // jump healer
+
+		s = tickUntilDone(story, s);
+		expectAtDoneScene(story, s, "healer");
+		expect(s.vars.hp).toBe(15);
+
+		s = chooseByText(story, s, "마을로 돌아간다"); // jump village
+		s = tickUntilDone(story, s);
+		expectAtDoneScene(story, s, "village");
+		expect(s.vars.hp).toBe(15);
+	});
+
 	it("scene start -> going_home 엔딩", () => {
 		let s = initialEngineState(story);
 		s = chooseByText(story, s, "숲으로 들어간다"); // hp -1, jump forest
