@@ -18,17 +18,14 @@ yarn test     # Vitest
 yarn build && yarn preview
 ```
 
-## 저장 시 `.iyagi` 자동 포맷 (Run on Save)
-`.iyagi` 파일을 저장(`Ctrl+S`)할 때마다 들여쓰기/줄바꿈이 자동 정렬되게 하려면 Run on Save 확장을 쓰는 방식을 권장합니다.
+## 저장 시 `.iyagi` 자동 포맷 (Format on Save)
+이 레포는 VSCode 확장(`iyagi-lang`)이 `.iyagi`용 포맷터를 포함하고 있어, 별도 Run-on-Save 확장 없이도 저장(`Ctrl+S`) 시 자동 포맷이 가능합니다.
 
-1. Cursor/VSCode Extensions에서 `pucelle/run-on-save` 설치
-2. 이 레포는 프로젝트 전용 설정을 이미 포함하고 있습니다.
-   - `.vscode/settings.json`
-   - `*.iyagi` 저장 시 `node "scripts/format-iyagi.mjs" "${file}"` 실행
-3. 설정 적용을 위해 한 번 리로드합니다.
-   - Command Palette에서 `Run On Save: Enable`
-   - `Developer: Reload Window`
-4. 검증
+1. 확장 설치(로컬)
+   - `vscode-extension/iyagi-lang`을 VSCode/Cursor에서 “Run Extension”으로 실행하거나, VSIX로 설치합니다.
+2. 프로젝트 전용 설정
+   - `.vscode/settings.json`에 `[iyagi]` 전용 `editor.defaultFormatter` / `editor.formatOnSave`가 포함되어 있습니다.
+3. 검증
    - `src/scenarios/demo.iyagi`를 열고 저장(`Ctrl+S`)해보세요.
    - `{}` 블록/선택지 들여쓰기와 줄바꿈이 자동으로 정렬됩니다.
 

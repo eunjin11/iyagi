@@ -6,7 +6,6 @@
   "publisher": "local",
   "type": "module",
   "main": "./extension.js",
-  "activationEvents": ["onLanguage:iyagi", "onCommand:iyagi.formatDocument"],
   "engines": {
     "vscode": "^1.90.0"
   },
