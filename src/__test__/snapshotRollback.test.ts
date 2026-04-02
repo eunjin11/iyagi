@@ -21,7 +21,7 @@ const story: Story = {
 
 describe('snapshot rollback (SET_SNAPSHOT)', () => {
   it('다른 씬으로 간 뒤 SET_SNAPSHOT으로 sceneId/stepIndex/vars 복원이 된다', () => {
-    let s0 = initialEngineState(story);
+    const s0 = initialEngineState(story);
     // 초기 상태: a / 0 / init(vars 없음)
     expect(s0.sceneId).toBe('a');
     expect(s0.stepIndex).toBe(0);
@@ -63,10 +63,10 @@ describe('snapshot rollback (SET_SNAPSHOT)', () => {
   });
 
   it('rollback 후 TAP_ADVANCE는 스냅샷 stepIndex 기준으로 동작한다', () => {
-    let s0 = initialEngineState(story);
+    const s0 = initialEngineState(story);
 
     // s0: stepIndex 0
-    let s1 = {
+    const s1 = {
       ...s0,
       sceneId: 'b',
       stepIndex: 1,

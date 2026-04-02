@@ -65,7 +65,9 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      const s = story.scenes.s!;
+      const s = story.scenes.s;
+      expect(s).toBeDefined();
+      if (!s) throw new Error('scene "s" not found');
       expect(s.steps[0]).toEqual({ type: 'text', content: '대사' });
       expect(s.steps[1]).toEqual({ type: 'script', code: 'if (hp > 0) jump("t")' });
       expect(s.choices).toEqual([{ text: '가기', script: 'jump("u")' }]);
@@ -167,17 +169,21 @@ s {
     it('village: 빵은 if(gold>=1)·evalWhen·다른 선택지는 조건 없음', () => {
       const { story, errors } = parseDSL(demoStorySource(), { title: '여행', start: 'start' });
       expect(errors).toEqual([]);
-      const village = story.scenes.village!;
+      const village = story.scenes.village;
+      expect(village).toBeDefined();
+      if (!village) throw new Error('scene "village" not found');
       expect(village.choices).toHaveLength(3);
 
       const bread = village.choices.find((c) => c.text === '빵을 산다');
       expect(bread?.enabledWhen).toBe('gold >= 1');
-      expect(bread?.script).toContain('jump("going_home")');
+      if (!bread) throw new Error('choice "빵을 산다" not found');
+      if (!bread.enabledWhen) throw new Error('choice "빵을 산다" has no enabledWhen');
+      expect(bread.script).toContain('jump("going_home")');
 
       const varsPoor = { hp: 10, gold: 0 };
       const varsRich = { hp: 10, gold: 1 };
-      expect(evalWhen(bread!.enabledWhen!, varsPoor)).toBe(false);
-      expect(evalWhen(bread!.enabledWhen!, varsRich)).toBe(true);
+      expect(evalWhen(bread.enabledWhen, varsPoor)).toBe(false);
+      expect(evalWhen(bread.enabledWhen, varsRich)).toBe(true);
 
       const road = village.choices.find((c) => c.text === '다시 길로 나온다');
       const end = village.choices.find((c) => c.text === '여행을 마치고 집으로 돌아간다');

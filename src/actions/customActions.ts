@@ -15,7 +15,7 @@ export function createCustomActions(ctx: ActionContext): CustomActions {
   function heal(amount: number) {
     ctx.setVars((prev) => ({
       ...prev,
-      hp: (Number(prev['hp']) || 0) + amount,
+      hp: (Number(prev.hp) || 0) + amount,
     }));
   }
 

@@ -31,7 +31,9 @@ function pickFirstRawStory(files: Record<string, string>, opts?: { title?: strin
   const entries = Object.entries(files);
   if (entries.length === 0) return undefined;
   entries.sort(([a], [b]) => a.localeCompare(b));
-  const [path, dsl] = entries[0]!;
+  const first = entries[0];
+  if (!first) return undefined;
+  const [path, dsl] = first;
   return storyFromRawFile(path, dsl, opts);
 }
 

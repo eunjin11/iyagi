@@ -104,7 +104,9 @@ describe('applyStoryEvent + RUN_SCRIPT', () => {
     expect(s.vars.hp).toBe(11);
     expect(s.stepIndex).toBe(3);
 
-    const scene = afterFruitLike.scenes.after_fruit!;
+    const scene = afterFruitLike.scenes.after_fruit;
+    expect(scene).toBeDefined();
+    if (!scene) throw new Error('scene "after_fruit" not found');
     expect(s.stepIndex).toBeGreaterThanOrEqual(scene.steps.length);
   });
 
