@@ -139,9 +139,9 @@ function splitSceneBlocks(src: string, errors: string[]): SceneBlock[] {
   const blocks: SceneBlock[] = [];
   // scene 이름: 영숫자 + _ (공백 없음)
   const headerRe = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*\{/gm;
-  let match: RegExpExecArray | null;
-
-  while ((match = headerRe.exec(src)) !== null) {
+  while (true) {
+    const match = headerRe.exec(src);
+    if (match === null) break;
     const name = match[1];
     const openBrace = match.index + match[0].length - 1; // '{' 위치
     let depth = 1;
@@ -195,6 +195,73 @@ function parseSceneBody(id: string, body: string, errors: string[]): Scene {
       if (ifLineChoice) {
         choices.push(ifLineChoice);
         i++;
+        continue;
+      }
+
+      // if (조건) "텍스트" ->   (다음 줄에서 `{ ... }`를 읽는다)
+      const ifArrowOnly = matchIfChoiceArrowOnlyStart(line, id, errors);
+      if (ifArrowOnly) {
+        let j = i + 1;
+        while (j < lines.length && (lines[j].trim() === "" || lines[j].trim().startsWith("//"))) {
+          j++;
+        }
+        if (j >= lines.length) {
+          errors.push(
+            `Scene "${id}": 선택지 "${ifArrowOnly.text}" -> 뒤에 { 가 없음`,
+          );
+          i++;
+          continue;
+        }
+
+        const openTrim = lines[j].trim();
+        let k: number;
+        let script: string;
+
+        if (openTrim === "{") {
+          const scriptLines: string[] = [];
+          k = j + 1;
+          while (k < lines.length) {
+            const inner = lines[k].trim();
+            if (inner === "}") {
+              k++;
+              break;
+            }
+            scriptLines.push(inner);
+            k++;
+          }
+          script = scriptLines.join("\n").trim();
+        } else if (openTrim.startsWith("{")) {
+          const rest = openTrim.slice(1);
+          const closeOnSame = rest.indexOf("}");
+          if (closeOnSame !== -1) {
+            script = rest.slice(0, closeOnSame).trim();
+            k = j + 1;
+          } else {
+            const scriptLines: string[] = [];
+            const first = rest.trim();
+            if (first) scriptLines.push(first);
+            k = j + 1;
+            while (k < lines.length) {
+              const inner = lines[k].trim();
+              if (inner === "}") {
+                k++;
+                break;
+              }
+              scriptLines.push(inner);
+              k++;
+            }
+            script = scriptLines.join("\n").trim();
+          }
+        } else {
+          errors.push(
+            `Scene "${id}": 선택지 "${ifArrowOnly.text}" -> 다음 줄은 '{' 로 시작해야 함 (${openTrim.slice(0, 40)})`,
+          );
+          i++;
+          continue;
+        }
+
+        choices.push(choiceFromParts(ifArrowOnly.text, script, ifArrowOnly.condition, id, errors));
+        i = k;
         continue;
       }
 
@@ -386,12 +453,48 @@ function matchIfChoiceLine(
   const rest = trimmed.slice(pos).trim();
   const tail = /^"([^"]+)"\s*->\s*\{([^}]*)\}\s*$/.exec(rest);
   if (!tail) {
+    // `if (cond) "text" ->` 처럼 `{ ... }`가 다음 줄에 오는 형태면,
+    // 여기서는 에러를 기록하지 않고 caller가 다른 패턴을 시도하도록 한다.
+    const arrowOnlyTail = /^"([^"]+)"\s*->\s*$/.exec(rest);
+    if (arrowOnlyTail) return null;
     errors.push(
       `Scene "${sceneId}": if (…) 뒤에는 "텍스트" -> { 한 줄 스크립트 } 형식이 필요 (${rest.slice(0, 48)})`,
     );
     return null;
   }
   return choiceFromParts(tail[1], tail[2].trim(), condition, sceneId, errors);
+}
+
+/** `if (조건) "레이블" ->` 시작 라인 매칭 (스크립트 본문은 다음 줄에서 `{ ... }`로 읽는다). */
+function matchIfChoiceArrowOnlyStart(
+  line: string,
+  sceneId: string,
+  errors: string[],
+): { condition: string; text: string } | null {
+  const trimmed = line.trim();
+  const ifHead = /^if\s*\(/i.exec(trimmed);
+  if (!ifHead) return null;
+
+  let pos = ifHead[0].length;
+  let depth = 1;
+  const condStart = pos;
+  while (pos < trimmed.length && depth > 0) {
+    const c = trimmed[pos];
+    if (c === "(") depth++;
+    else if (c === ")") depth--;
+    pos++;
+  }
+
+  if (depth !== 0) {
+    errors.push(`Scene "${sceneId}": if(…) 조건 괄호가 닫히지 않음`);
+    return null;
+  }
+
+  const condition = trimmed.slice(condStart, pos - 1).trim();
+  const rest = trimmed.slice(pos).trim();
+  const tail = /^"([^"]+)"\s*->\s*$/.exec(rest);
+  if (!tail) return null;
+  return { condition, text: tail[1] };
 }
 
 /** `"텍스트" -> { script }` 한 줄 패턴 매칭 */

@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "*.iyagi": "iyagi"
+  },
+  "[iyagi]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "local.iyagi-lang"
+  }
+}
+

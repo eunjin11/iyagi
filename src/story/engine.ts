@@ -83,7 +83,7 @@ export function useStoryEngine(story: Story) {
       }
       dispatchReducer(toReducerEvent(e, stateRef.current.vars));
     },
-    [dispatchReducer, pushLog],
+    [pushLog],
   );
 
   const getSnapshot = useCallback((): { engine: StoryEngineState; storyLog: StoryLogEntry[] } => {
@@ -111,7 +111,7 @@ export function useStoryEngine(story: Story) {
         },
       });
     },
-    [dispatchReducer],
+    [],
   );
 
   const { scene, steps, currentStep, isDone, pastTexts, choices } = deriveFromState(story, state);
@@ -129,7 +129,7 @@ export function useStoryEngine(story: Story) {
 
     dispatch({ type: 'RUN_SCRIPT', context: 'step', code: step.code });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.sceneId, state.stepIndex]);
+  }, [dispatch, steps, state.stepIndex]);
 
   function advance() {
     const step = steps[state.stepIndex];

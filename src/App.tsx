@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import type React from "react";
+import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { currentStory } from "./story/current";
 import { useStoryEngine } from "./story/engine";
@@ -24,18 +25,20 @@ type SceneNavState = {
 
 function isSceneNavState(v: unknown): v is SceneNavState {
   if (!v || typeof v !== "object") return false;
-  const obj = v as Record<string, unknown>;
-  const navId = obj["navId"];
-  const snapshot = obj["snapshot"];
+  const obj = v as { navId?: unknown; snapshot?: unknown };
+  const navId = obj.navId;
+  const snapshot = obj.snapshot;
   if (typeof navId !== "number") return false;
   if (!snapshot || typeof snapshot !== "object") return false;
-  const snap = snapshot as Record<string, unknown>;
-  const engine = snap["engine"] as Record<string, unknown> | undefined;
-  const storyLog = snap["storyLog"] as unknown;
+  const snap = snapshot as { engine?: unknown; storyLog?: unknown };
+  const engine = snap.engine as
+    | { sceneId?: unknown; stepIndex?: unknown; vars?: unknown }
+    | undefined;
+  const storyLog = snap.storyLog;
   if (!engine || typeof engine !== "object") return false;
-  if (typeof engine["sceneId"] !== "string") return false;
-  if (typeof engine["stepIndex"] !== "number") return false;
-  if (!engine["vars"] || typeof engine["vars"] !== "object") return false;
+  if (typeof engine.sceneId !== "string") return false;
+  if (typeof engine.stepIndex !== "number") return false;
+  if (!engine.vars || typeof engine.vars !== "object") return false;
   if (!Array.isArray(storyLog)) return false;
   return true;
 }
@@ -82,7 +85,7 @@ function StoryView(): React.JSX.Element {
     restoringRef.current = true;
     setSnapshot(externalNavState.snapshot);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalNavState?.navId, setSnapshot]);
+  }, [externalNavState, setSnapshot]);
 
   // (2) 씬(scene.id)이 바뀌면 "첫 렌더링 가능한 순간"에만 스냅샷을 히스토리에 기록한다.
   useEffect(() => {
@@ -114,8 +117,7 @@ function StoryView(): React.JSX.Element {
     pendingSceneCommitRef.current = false;
 
     // initial load에서만 replace로 "현재 엔트리"를 스냅샷으로 덮어쓴다.
-    const replace =
-      !didInitRef.current && externalNavState == null ? true : false;
+    const replace = !didInitRef.current && externalNavState == null;
     if (!didInitRef.current) didInitRef.current = true;
 
     const snapshot = getSnapshot();
@@ -134,12 +136,15 @@ function StoryView(): React.JSX.Element {
   }
 
   useEffect(() => {
+    // Keep deps in sync with what's rendered.
+    if (pastTexts.length === 0 && !currentStep?.content) return;
     const el = storyPanelRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [pastTexts.length, currentStep?.content]);
 
   useEffect(() => {
+    if (storyLog.length === 0) return;
     const el = logScrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
@@ -169,9 +174,9 @@ function StoryView(): React.JSX.Element {
             role={canAdvance ? "button" : undefined}
             style={{ cursor: canAdvance ? "pointer" : "default" }}
           >
-            {pastTexts.map((t, i) => (
+            {pastTexts.map((t) => (
               <div
-                key={i}
+                key={t}
                 style={{
                   whiteSpace: "pre-wrap",
                   marginBottom: "0.75em",
@@ -192,11 +197,12 @@ function StoryView(): React.JSX.Element {
         {/* 모든 step 완료 후 choices */}
         {isDone && choices.length > 0 && (
           <nav className={actionRow} aria-label="actions">
-            {choices.map((c, idx) => {
+            {choices.map((c) => {
               const enabled = !c.enabledWhen || evalWhen(c.enabledWhen, vars);
+              const choiceKey = `${c.text}|${c.enabledWhen ?? ""}|${c.script}`;
               return (
                 <button
-                  key={idx}
+                  key={choiceKey}
                   type="button"
                   className={actionButton}
                   disabled={!enabled}
@@ -236,6 +242,7 @@ function StoryView(): React.JSX.Element {
           </summary>
           <div
             ref={logScrollRef}
+            role="log"
             aria-label="story-log"
             style={{
               marginTop: "0.75rem",
@@ -250,8 +257,17 @@ function StoryView(): React.JSX.Element {
             {storyLog.length === 0 ? (
               <div style={{ opacity: 0.55 }}>아직 기록이 없습니다.</div>
             ) : (
-              storyLog.map((entry, i) => (
-                <div key={i} style={{ marginBottom: "0.65em" }}>
+              storyLog.map((entry) => {
+                const entryKey =
+                  entry.kind === "enterScene"
+                    ? `enterScene|${entry.sceneId}`
+                    : entry.kind === "text"
+                      ? `text|${entry.sceneId}|${entry.content}`
+                      : entry.kind === "script"
+                        ? `script|${entry.sceneId}|${entry.code}`
+                        : `choice|${entry.sceneId}|${entry.text}|${entry.script}`;
+                return (
+                  <div key={entryKey} style={{ marginBottom: "0.65em" }}>
                   {entry.kind === "enterScene" && (
                     <div style={{ opacity: 0.7 }}>
                       <strong>씬</strong> · <code>{entry.sceneId}</code>
@@ -313,8 +329,9 @@ function StoryView(): React.JSX.Element {
                       )}
                     </div>
                   )}
-                </div>
-              ))
+                  </div>
+                );
+              })
             )}
           </div>
         </details>
@@ -322,6 +339,7 @@ function StoryView(): React.JSX.Element {
 
       {isDev && (
         <div
+          role="status"
           aria-label="debug-overlay"
           style={{
             position: "fixed",

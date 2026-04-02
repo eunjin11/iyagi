@@ -36,7 +36,7 @@ function rewriteEqualityToStrictSeq(node: MathNode): MathNode {
 export function normalizeWhenExpr(src: string): string {
   const s = src.trim();
   if (!s) throw new SyntaxError('빈 조건');
-  let t = s.replace(/===/g, '==').replace(/!==/g, '!=');
+  const t = s.replace(/===/g, '==').replace(/!==/g, '!=');
   let out = '';
   for (let i = 0; i < t.length; i++) {
     const c = t[i];
