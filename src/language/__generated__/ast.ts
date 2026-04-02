@@ -229,7 +229,7 @@ export function isInlineAction(item: unknown): item is InlineAction {
 
 export interface InlineScene extends langium.AstNode {
     readonly $container: Document;
-    readonly $type: 'InlineScene';
+    readonly $type: 'IgnoredTop' | 'InlineScene';
     name: string;
     texts: Array<string>;
 }
@@ -246,7 +246,7 @@ export function isInlineScene(item: unknown): item is InlineScene {
 
 export interface MultiLineScene extends langium.AstNode {
     readonly $container: Document;
-    readonly $type: 'IgnoredLine' | 'MultiLineScene';
+    readonly $type: 'IgnoredLine' | 'IgnoredTop' | 'MultiLineScene';
     items: Array<SceneItem>;
     name: string;
 }
@@ -298,15 +298,23 @@ export function isSceneItem(item: unknown): item is SceneItem {
     return reflection.isInstance(item, SceneItem.$type);
 }
 
+export type ScriptHead = '(' | ')' | ',' | '.' | '=' | 'false' | 'if' | 'true' | string;
+
+export function isScriptHead(item: unknown): item is ScriptHead {
+    return item === 'true' || item === 'false' || item === 'if' || item === '=' || item === '(' || item === ')' || item === ',' || item === '.' || (typeof item === 'string' && (/[a-zA-Z_][a-zA-Z0-9_]*/.test(item) || /-?\d+(\.\d+)?/.test(item) || /<=/.test(item) || />=/.test(item) || /</.test(item) || />/.test(item)));
+}
+
 export interface ScriptLine extends langium.AstNode {
     readonly $container: MultiLineScene;
     readonly $type: 'ScriptLine';
-    codeTokens: Array<ScriptToken>;
+    head: ScriptHead;
+    tailTokens: Array<ScriptToken>;
 }
 
 export const ScriptLine = {
     $type: 'ScriptLine',
-    codeTokens: 'codeTokens'
+    head: 'head',
+    tailTokens: 'tailTokens'
 } as const;
 
 export function isScriptLine(item: unknown): item is ScriptLine {
@@ -352,7 +360,7 @@ export function isVarLine(item: unknown): item is VarLine {
 }
 
 export interface VarsBlock extends Document {
-    readonly $type: 'VarsBlock';
+    readonly $type: 'IgnoredTop' | 'VarsBlock';
     vars: Array<VarLine>;
 }
 
@@ -588,8 +596,11 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
         ScriptLine: {
             name: ScriptLine.$type,
             properties: {
-                codeTokens: {
-                    name: ScriptLine.codeTokens,
+                head: {
+                    name: ScriptLine.head
+                },
+                tailTokens: {
+                    name: ScriptLine.tailTokens,
                     defaultValue: []
                 }
             },

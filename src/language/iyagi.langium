@@ -12,8 +12,7 @@ terminal IND6: /      /;
 terminal IND4: /    /;
 terminal IND2: /  /;
 
-hidden terminal WS: / +/; // spaces only
-terminal TAB: /\t+/; // tabs are forbidden (will surface as lexer errors)
+hidden terminal WS: / +/; // spaces only (tabs are not skipped)
 
 terminal SIGNED_NUMBER: /-?\d+(\.\d+)?/;
 terminal ID: /[a-zA-Z_][a-zA-Z0-9_]*/;
@@ -31,7 +30,7 @@ terminal GT: />/;
 // ---------------------------------------------------------------------------
 
 entry Document:
-  IgnoredTop* VarsBlock? IgnoredTop* (scenes+=Scene IgnoredTop*)*;
+  IgnoredTop* VarsBlock? scenes+=Scene*;
 
 IgnoredTop returns string:
     NL
@@ -39,7 +38,8 @@ IgnoredTop returns string:
 
 VarsBlock:
   'vars:' NL
-  vars+=VarLine*;
+  vars+=VarLine*
+  IgnoredTop*;
 
 VarLine:
   IND2 name=ID '=' value=VarValue NL;
@@ -57,10 +57,10 @@ Scene:
 MultiLineScene:
   name=ID '{' NL
     (items+=SceneItem | IgnoredLine)*
-  '}' NL?;
+  '}' IgnoredTop*;
 
 InlineScene:
-  name=ID '{' texts+=STRING+ '}' NL?;
+  name=ID '{' texts+=STRING+ '}' IgnoredTop*;
 
 SceneItem:
     ChoiceBlock
@@ -75,7 +75,23 @@ TextLine:
   IND2 texts+=STRING+ NL;
 
 ScriptLine:
-  IND2 codeTokens+=ScriptToken+ NL;
+  IND2 head=ScriptHead tailTokens+=ScriptToken* NL;
+
+ScriptHead returns string:
+    ID
+  | SIGNED_NUMBER
+  | 'true'
+  | 'false'
+  | 'if'
+  | LE
+  | GE
+  | LT
+  | GT
+  | '='
+  | '('
+  | ')'
+  | ','
+  | '.';
 
 ScriptToken returns string:
     ID
