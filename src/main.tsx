@@ -1,5 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App';
 import './styles/theme.css.ts';
 import { appRoot } from './styles/app.css';
@@ -12,7 +13,12 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <React.StrictMode>
     <div className={appRoot}>
-      <App />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/play" replace />} />
+          <Route path="/play" element={<App />} />
+        </Routes>
+      </BrowserRouter>
     </div>
   </React.StrictMode>
 );

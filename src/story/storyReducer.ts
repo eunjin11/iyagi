@@ -19,7 +19,9 @@ export type StoryReducerEvent =
       context: 'step' | 'choice';
       vars: VariableBag;
       jumpTo: string | null;
-    };
+    }
+  /** 엔진 스냅샷을 그대로 덮어씌운다(롤백/리플레이용). */
+  | { type: 'SET_SNAPSHOT'; snapshot: StoryEngineState };
 
 /**
  * 엔진·테스트용 입력. `RUN_SCRIPT`는 실행 외부에서 `runScriptWithResult`로
@@ -43,6 +45,9 @@ export function storyReducer(
   story: Story,
 ): StoryEngineState {
   switch (event.type) {
+    case 'SET_SNAPSHOT': {
+      return event.snapshot;
+    }
     case 'TAP_ADVANCE': {
       const scene = story.scenes[state.sceneId] ?? emptyScene(state.sceneId);
       const step = scene.steps[state.stepIndex];
