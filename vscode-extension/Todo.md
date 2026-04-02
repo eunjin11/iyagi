@@ -23,6 +23,7 @@
   - [ ] `publish:marketplace`
   - [ ] `publish:openvsx`
 - [ ] `.vscodeignore` 또는 `files` 필드로 VSIX 포함 파일 최소화
+- [ ] 포맷터를 `@iyagi/formatter` 같은 npm 패키지로 분리
 
 ## 3) 릴리즈 전략(둘 다 지원)
 
@@ -39,4 +40,3 @@
   - [ ] Cursor/Open VSX 설치 방법
   - [ ] VSIX 수동 설치 방법
   - [ ] 저장 시 자동 포맷 설정(`.vscode/settings.json`) 안내
-
