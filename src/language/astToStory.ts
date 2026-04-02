@@ -188,8 +188,11 @@ export function astToStory(
   }
 
   const firstId = ast.scenes[0]?.name ?? "start";
+  const titleFromDslRaw = typeof ast.title === "string" ? ast.title : "";
+  const titleFromDsl =
+    titleFromDslRaw.trim() !== "" ? unquoteStringLiteral(titleFromDslRaw) : undefined;
   const story: Story = {
-    title: opts?.title ?? "Story",
+    title: titleFromDsl ?? opts?.title ?? "Story",
     start: opts?.start ?? firstId,
     scenes,
     init: { ...initFromVars, ...opts?.init },

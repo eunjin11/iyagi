@@ -182,6 +182,43 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "cardinality": "*"
           },
           {
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "title:"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "title",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@9"
+                  },
+                  "arguments": []
+                }
+              },
+              {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@0"
+                },
+                "arguments": []
+              },
+              {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@15"
+                },
+                "arguments": [],
+                "cardinality": "*"
+              }
+            ],
+            "cardinality": "?"
+          },
+          {
             "$type": "RuleCall",
             "rule": {
               "$ref": "#/rules@16"

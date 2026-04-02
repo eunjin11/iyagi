@@ -35,6 +35,7 @@ export type iyagiKeywordNames =
     | "choices:"
     | "false"
     | "if"
+    | "title:"
     | "true"
     | "vars:"
     | "{"
@@ -170,11 +171,13 @@ export function isChoiceLine(item: unknown): item is ChoiceLine {
 export interface Document extends langium.AstNode {
     readonly $type: 'Document' | 'IgnoredTop' | 'VarsBlock';
     scenes: Array<Scene>;
+    title: string;
 }
 
 export const Document = {
     $type: 'Document',
-    scenes: 'scenes'
+    scenes: 'scenes',
+    title: 'title'
 } as const;
 
 export function isDocument(item: unknown): item is Document {
@@ -367,6 +370,7 @@ export interface VarsBlock extends Document {
 export const VarsBlock = {
     $type: 'VarsBlock',
     scenes: 'scenes',
+    title: 'title',
     vars: 'vars'
 } as const;
 
@@ -514,6 +518,9 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
                 scenes: {
                     name: Document.scenes,
                     defaultValue: []
+                },
+                title: {
+                    name: Document.title
                 }
             },
             superTypes: []
@@ -634,6 +641,9 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
                 scenes: {
                     name: VarsBlock.scenes,
                     defaultValue: []
+                },
+                title: {
+                    name: VarsBlock.title
                 },
                 vars: {
                     name: VarsBlock.vars,
