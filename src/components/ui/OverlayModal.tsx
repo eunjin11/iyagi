@@ -28,17 +28,20 @@ export const OverlayModal = ({
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss();
+    };
+    window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, onDismiss]);
 
   if (!open) return null;
 
   const header = (
-    // biome-ignore lint/a11y/noStaticElementInteractions: 헤더 줄 클릭이 배경 닫힘으로 전파되지 않게 함
-    // biome-ignore lint/a11y/useKeyWithClickEvents: 키보드는 닫기 버튼·Esc로 처리
-    <div className={css.overlayHeader} onClick={(e) => e.stopPropagation()}>
+    <header className={css.overlayHeader}>
       <p className={css.overlayTitle}>{title}</p>
       <button
         type="button"
@@ -48,39 +51,44 @@ export const OverlayModal = ({
       >
         ✕
       </button>
-    </div>
+    </header>
   );
 
+  const dialogLabel = ariaLabel ?? title;
+
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: 전체 화면 딤 영역 탭으로 닫기
-    <div
-      className={css.overlay}
-      onClick={onDismiss}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onDismiss();
-      }}
-      role="presentation"
-    >
-      {variant === "panel" ? (
-        <div
-          className={panelClassName}
-          role="dialog"
-          aria-label={ariaLabel ?? title}
-          aria-modal="true"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") onDismiss();
-          }}
-        >
-          {header}
-          {children}
-        </div>
-      ) : (
-        <>
-          {header}
-          {children}
-        </>
-      )}
+    <div className={css.overlayRoot}>
+      <button
+        type="button"
+        className={css.backdrop}
+        onClick={onDismiss}
+        aria-label="오버레이 닫기"
+      />
+      <div className={css.contentLayer}>
+        {variant === "panel" ? (
+          <div
+            className={[panelClassName, css.contentInteractive]
+              .filter(Boolean)
+              .join(" ")}
+            role="dialog"
+            aria-label={dialogLabel}
+            aria-modal="true"
+          >
+            {header}
+            {children}
+          </div>
+        ) : (
+          <div
+            className={css.contentInteractive}
+            role="dialog"
+            aria-label={dialogLabel}
+            aria-modal="true"
+          >
+            {header}
+            {children}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

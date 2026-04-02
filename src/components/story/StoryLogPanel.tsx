@@ -43,8 +43,6 @@ export const StoryLogPanel = ({ storyLog, isDev, interpolate }: Props) => {
           role="log"
           aria-label="story-log"
           className={modal.scrollArea}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
         >
           {storyLog.length === 0 ? (
             <div style={{ opacity: 0.5 }}>아직 기록이 없습니다.</div>
