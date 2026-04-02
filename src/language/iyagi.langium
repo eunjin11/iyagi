@@ -30,7 +30,10 @@ terminal GT: />/;
 // ---------------------------------------------------------------------------
 
 entry Document:
-  IgnoredTop* VarsBlock? scenes+=Scene*;
+  IgnoredTop*
+  ('title:' title=STRING NL IgnoredTop*)?
+  VarsBlock?
+  scenes+=Scene*;
 
 IgnoredTop returns string:
     NL

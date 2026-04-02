@@ -53,6 +53,18 @@ s { "x" }
     });
   });
 
+  describe("title:", () => {
+    it('title: "..." 를 Story.title로 사용 (opts.title보다 우선)', () => {
+      const { story, errors } = parseDSL(`
+title: "여행"
+
+a { "hi" }
+`, { title: "경로에서_추론된_제목" });
+      expect(errors).toEqual([]);
+      expect(story.title).toBe("여행");
+    });
+  });
+
   describe("scenes", () => {
     it("씬 이름에 언더스코어 허용", () => {
       const { story, errors } = parseDSL(`
@@ -160,7 +172,6 @@ s {
   describe("demo.iyagi 통합", () => {
     it("예제 파일이 오류 없이 파싱되고 필수 씬·init 존재", () => {
       const { story, errors } = parseDSL(demoStorySource(), {
-        title: "여행",
         start: "start",
       });
       expect(errors).toEqual([]);
@@ -176,7 +187,6 @@ s {
 
     it("after_fruit: 진입 스크립트 → 대사 → 대사 이후 inc 스크립트 순 스텝", () => {
       const { story, errors } = parseDSL(demoStorySource(), {
-        title: "여행",
         start: "start",
       });
       expect(errors).toEqual([]);
@@ -195,7 +205,6 @@ s {
 
     it("village: 빵은 if(gold>=1)·evalWhen·다른 선택지는 조건 없음", () => {
       const { story, errors } = parseDSL(demoStorySource(), {
-        title: "여행",
         start: "start",
       });
       expect(errors).toEqual([]);
