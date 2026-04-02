@@ -13,13 +13,14 @@ export const iyagiTerminals = {
     IND6: /      /,
     IND4: /    /,
     IND2: /  /,
-    BLANK: / +/,
+    WS: / +/,
     SIGNED_NUMBER: /-?\d+(\.\d+)?/,
     ID: /[a-zA-Z_][a-zA-Z0-9_]*/,
     STRING: /"([^"\\]|\\.)*"/,
-    LINE_TEXT: /[^\r\n]+/,
-    INLINE_ACTION_TEXT: /[^}\r\n]+/,
-    WHEN_TEXT: /[^)\r\n]+/,
+    LE: /<=/,
+    GE: />=/,
+    LT: /</,
+    GT: />/,
 };
 
 export type iyagiTerminalNames = keyof typeof iyagiTerminals;
@@ -27,7 +28,9 @@ export type iyagiTerminalNames = keyof typeof iyagiTerminals;
 export type iyagiKeywordNames =
     | "("
     | ")"
+    | ","
     | "->"
+    | "."
     | "="
     | "choices:"
     | "false"
@@ -39,40 +42,70 @@ export type iyagiKeywordNames =
 
 export type iyagiTokenNames = iyagiTerminalNames | iyagiKeywordNames;
 
-export interface ActionBlock extends langium.AstNode {
-    readonly $container: BlockActionNextLine | BlockActionSameLine;
-    readonly $type: 'ActionBlock';
-    lines: Array<ActionLine>;
+export interface ActionBlockNextLine extends langium.AstNode {
+    readonly $container: BlockActionNextLine;
+    readonly $type: 'ActionBlockNextLine';
+    lines: Array<ActionLine8>;
 }
 
-export const ActionBlock = {
-    $type: 'ActionBlock',
+export const ActionBlockNextLine = {
+    $type: 'ActionBlockNextLine',
     lines: 'lines'
 } as const;
 
-export function isActionBlock(item: unknown): item is ActionBlock {
-    return reflection.isInstance(item, ActionBlock.$type);
+export function isActionBlockNextLine(item: unknown): item is ActionBlockNextLine {
+    return reflection.isInstance(item, ActionBlockNextLine.$type);
 }
 
-export interface ActionLine extends langium.AstNode {
-    readonly $container: ActionBlock;
-    readonly $type: 'ActionLine';
-    code: string;
+export interface ActionBlockSameLine extends langium.AstNode {
+    readonly $container: BlockActionSameLine;
+    readonly $type: 'ActionBlockSameLine';
+    lines: Array<ActionLine6>;
 }
 
-export const ActionLine = {
-    $type: 'ActionLine',
-    code: 'code'
+export const ActionBlockSameLine = {
+    $type: 'ActionBlockSameLine',
+    lines: 'lines'
 } as const;
 
-export function isActionLine(item: unknown): item is ActionLine {
-    return reflection.isInstance(item, ActionLine.$type);
+export function isActionBlockSameLine(item: unknown): item is ActionBlockSameLine {
+    return reflection.isInstance(item, ActionBlockSameLine.$type);
+}
+
+export interface ActionLine6 extends langium.AstNode {
+    readonly $container: ActionBlockSameLine;
+    readonly $type: 'ActionLine6';
+    codeTokens: Array<ScriptToken>;
+}
+
+export const ActionLine6 = {
+    $type: 'ActionLine6',
+    codeTokens: 'codeTokens'
+} as const;
+
+export function isActionLine6(item: unknown): item is ActionLine6 {
+    return reflection.isInstance(item, ActionLine6.$type);
+}
+
+export interface ActionLine8 extends langium.AstNode {
+    readonly $container: ActionBlockNextLine;
+    readonly $type: 'ActionLine8';
+    codeTokens: Array<ScriptToken>;
+}
+
+export const ActionLine8 = {
+    $type: 'ActionLine8',
+    codeTokens: 'codeTokens'
+} as const;
+
+export function isActionLine8(item: unknown): item is ActionLine8 {
+    return reflection.isInstance(item, ActionLine8.$type);
 }
 
 export interface BlockActionNextLine extends langium.AstNode {
     readonly $container: IfChoice | PlainChoice;
     readonly $type: 'BlockActionNextLine';
-    block: ActionBlock;
+    block: ActionBlockNextLine;
 }
 
 export const BlockActionNextLine = {
@@ -87,7 +120,7 @@ export function isBlockActionNextLine(item: unknown): item is BlockActionNextLin
 export interface BlockActionSameLine extends langium.AstNode {
     readonly $container: IfChoice | PlainChoice;
     readonly $type: 'BlockActionSameLine';
-    block: ActionBlock;
+    block: ActionBlockSameLine;
 }
 
 export const BlockActionSameLine = {
@@ -110,7 +143,7 @@ export function isChoiceAction(item: unknown): item is ChoiceAction {
 }
 
 export interface ChoiceBlock extends langium.AstNode {
-    readonly $container: Scene;
+    readonly $container: MultiLineScene;
     readonly $type: 'ChoiceBlock';
     choices: Array<ChoiceLine>;
 }
@@ -135,7 +168,7 @@ export function isChoiceLine(item: unknown): item is ChoiceLine {
 }
 
 export interface Document extends langium.AstNode {
-    readonly $type: 'Document' | 'VarsBlock';
+    readonly $type: 'Document' | 'IgnoredTop' | 'VarsBlock';
     scenes: Array<Scene>;
 }
 
@@ -173,19 +206,59 @@ export function isIgnoredLine(item: unknown): item is IgnoredLine {
     return typeof item === 'string';
 }
 
+export type IgnoredTop = string;
+
+export function isIgnoredTop(item: unknown): item is IgnoredTop {
+    return typeof item === 'string';
+}
+
 export interface InlineAction extends langium.AstNode {
     readonly $container: IfChoice | PlainChoice;
     readonly $type: 'InlineAction';
-    code: string;
+    codeTokens: Array<ScriptToken>;
 }
 
 export const InlineAction = {
     $type: 'InlineAction',
-    code: 'code'
+    codeTokens: 'codeTokens'
 } as const;
 
 export function isInlineAction(item: unknown): item is InlineAction {
     return reflection.isInstance(item, InlineAction.$type);
+}
+
+export interface InlineScene extends langium.AstNode {
+    readonly $container: Document;
+    readonly $type: 'InlineScene';
+    name: string;
+    texts: Array<string>;
+}
+
+export const InlineScene = {
+    $type: 'InlineScene',
+    name: 'name',
+    texts: 'texts'
+} as const;
+
+export function isInlineScene(item: unknown): item is InlineScene {
+    return reflection.isInstance(item, InlineScene.$type);
+}
+
+export interface MultiLineScene extends langium.AstNode {
+    readonly $container: Document;
+    readonly $type: 'IgnoredLine' | 'MultiLineScene';
+    items: Array<SceneItem>;
+    name: string;
+}
+
+export const MultiLineScene = {
+    $type: 'MultiLineScene',
+    items: 'items',
+    name: 'name'
+} as const;
+
+export function isMultiLineScene(item: unknown): item is MultiLineScene {
+    return reflection.isInstance(item, MultiLineScene.$type);
 }
 
 export interface PlainChoice extends langium.AstNode {
@@ -205,17 +278,10 @@ export function isPlainChoice(item: unknown): item is PlainChoice {
     return reflection.isInstance(item, PlainChoice.$type);
 }
 
-export interface Scene extends langium.AstNode {
-    readonly $container: Document;
-    readonly $type: 'IgnoredLine' | 'Scene';
-    items: Array<SceneItem>;
-    name: string;
-}
+export type Scene = InlineScene | MultiLineScene;
 
 export const Scene = {
-    $type: 'Scene',
-    items: 'items',
-    name: 'name'
+    $type: 'Scene'
 } as const;
 
 export function isScene(item: unknown): item is Scene {
@@ -233,22 +299,28 @@ export function isSceneItem(item: unknown): item is SceneItem {
 }
 
 export interface ScriptLine extends langium.AstNode {
-    readonly $container: Scene;
+    readonly $container: MultiLineScene;
     readonly $type: 'ScriptLine';
-    code: string;
+    codeTokens: Array<ScriptToken>;
 }
 
 export const ScriptLine = {
     $type: 'ScriptLine',
-    code: 'code'
+    codeTokens: 'codeTokens'
 } as const;
 
 export function isScriptLine(item: unknown): item is ScriptLine {
     return reflection.isInstance(item, ScriptLine.$type);
 }
 
+export type ScriptToken = '(' | ')' | ',' | '.' | '=' | 'false' | 'if' | 'true' | string;
+
+export function isScriptToken(item: unknown): item is ScriptToken {
+    return item === 'true' || item === 'false' || item === 'if' || item === '=' || item === '(' || item === ')' || item === ',' || item === '.' || (typeof item === 'string' && (/[a-zA-Z_][a-zA-Z0-9_]*/.test(item) || /"([^"\\]|\\.)*"/.test(item) || /-?\d+(\.\d+)?/.test(item) || /<=/.test(item) || />=/.test(item) || /</.test(item) || />/.test(item)));
+}
+
 export interface TextLine extends langium.AstNode {
-    readonly $container: Scene;
+    readonly $container: MultiLineScene;
     readonly $type: 'TextLine';
     texts: Array<string>;
 }
@@ -303,21 +375,29 @@ export function isVarValue(item: unknown): item is VarValue {
 export interface WhenExpr extends langium.AstNode {
     readonly $container: IfChoice;
     readonly $type: 'WhenExpr';
-    cond: string;
+    condTokens: Array<WhenToken>;
 }
 
 export const WhenExpr = {
     $type: 'WhenExpr',
-    cond: 'cond'
+    condTokens: 'condTokens'
 } as const;
 
 export function isWhenExpr(item: unknown): item is WhenExpr {
     return reflection.isInstance(item, WhenExpr.$type);
 }
 
+export type WhenToken = '(' | ',' | '.' | '=' | 'false' | 'true' | string;
+
+export function isWhenToken(item: unknown): item is WhenToken {
+    return item === 'true' || item === 'false' || item === '=' || item === '(' || item === ',' || item === '.' || (typeof item === 'string' && (/[a-zA-Z_][a-zA-Z0-9_]*/.test(item) || /"([^"\\]|\\.)*"/.test(item) || /-?\d+(\.\d+)?/.test(item) || /<=/.test(item) || />=/.test(item) || /</.test(item) || />/.test(item)));
+}
+
 export type iyagiAstType = {
-    ActionBlock: ActionBlock
-    ActionLine: ActionLine
+    ActionBlockNextLine: ActionBlockNextLine
+    ActionBlockSameLine: ActionBlockSameLine
+    ActionLine6: ActionLine6
+    ActionLine8: ActionLine8
     BlockActionNextLine: BlockActionNextLine
     BlockActionSameLine: BlockActionSameLine
     ChoiceAction: ChoiceAction
@@ -326,6 +406,8 @@ export type iyagiAstType = {
     Document: Document
     IfChoice: IfChoice
     InlineAction: InlineAction
+    InlineScene: InlineScene
+    MultiLineScene: MultiLineScene
     PlainChoice: PlainChoice
     Scene: Scene
     SceneItem: SceneItem
@@ -338,21 +420,42 @@ export type iyagiAstType = {
 
 export class iyagiAstReflection extends langium.AbstractAstReflection {
     override readonly types = {
-        ActionBlock: {
-            name: ActionBlock.$type,
+        ActionBlockNextLine: {
+            name: ActionBlockNextLine.$type,
             properties: {
                 lines: {
-                    name: ActionBlock.lines,
+                    name: ActionBlockNextLine.lines,
                     defaultValue: []
                 }
             },
             superTypes: []
         },
-        ActionLine: {
-            name: ActionLine.$type,
+        ActionBlockSameLine: {
+            name: ActionBlockSameLine.$type,
             properties: {
-                code: {
-                    name: ActionLine.code
+                lines: {
+                    name: ActionBlockSameLine.lines,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        ActionLine6: {
+            name: ActionLine6.$type,
+            properties: {
+                codeTokens: {
+                    name: ActionLine6.codeTokens,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        ActionLine8: {
+            name: ActionLine8.$type,
+            properties: {
+                codeTokens: {
+                    name: ActionLine8.codeTokens,
+                    defaultValue: []
                 }
             },
             superTypes: []
@@ -425,11 +528,38 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
         InlineAction: {
             name: InlineAction.$type,
             properties: {
-                code: {
-                    name: InlineAction.code
+                codeTokens: {
+                    name: InlineAction.codeTokens,
+                    defaultValue: []
                 }
             },
             superTypes: [ChoiceAction.$type]
+        },
+        InlineScene: {
+            name: InlineScene.$type,
+            properties: {
+                name: {
+                    name: InlineScene.name
+                },
+                texts: {
+                    name: InlineScene.texts,
+                    defaultValue: []
+                }
+            },
+            superTypes: [Scene.$type]
+        },
+        MultiLineScene: {
+            name: MultiLineScene.$type,
+            properties: {
+                items: {
+                    name: MultiLineScene.items,
+                    defaultValue: []
+                },
+                name: {
+                    name: MultiLineScene.name
+                }
+            },
+            superTypes: [Scene.$type]
         },
         PlainChoice: {
             name: PlainChoice.$type,
@@ -446,13 +576,6 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
         Scene: {
             name: Scene.$type,
             properties: {
-                items: {
-                    name: Scene.items,
-                    defaultValue: []
-                },
-                name: {
-                    name: Scene.name
-                }
             },
             superTypes: []
         },
@@ -465,8 +588,9 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
         ScriptLine: {
             name: ScriptLine.$type,
             properties: {
-                code: {
-                    name: ScriptLine.code
+                codeTokens: {
+                    name: ScriptLine.codeTokens,
+                    defaultValue: []
                 }
             },
             superTypes: [SceneItem.$type]
@@ -510,8 +634,9 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
         WhenExpr: {
             name: WhenExpr.$type,
             properties: {
-                cond: {
-                    name: WhenExpr.cond
+                condTokens: {
+                    name: WhenExpr.condTokens,
+                    defaultValue: []
                 }
             },
             superTypes: []

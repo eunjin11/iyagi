@@ -12,35 +12,37 @@ terminal IND6: /      /;
 terminal IND4: /    /;
 terminal IND2: /  /;
 
-terminal BLANK: / +/; // spaces only (tabs forbidden by design)
+hidden terminal WS: / +/; // spaces only
+terminal TAB: /\t+/; // tabs are forbidden (will surface as lexer errors)
 
 terminal SIGNED_NUMBER: /-?\d+(\.\d+)?/;
 terminal ID: /[a-zA-Z_][a-zA-Z0-9_]*/;
 
 terminal STRING: /"([^"\\]|\\.)*"/;
 
-// For script/action lines: keep everything until newline.
-terminal LINE_TEXT: /[^\r\n]+/;
+terminal LE: /<=/;
+terminal GE: />=/;
+terminal LT: /</;
+terminal GT: />/;
 
-// For inline `{ ... }` action: keep everything until the first `}` on the same line.
-terminal INLINE_ACTION_TEXT: /[^}\r\n]+/;
-
-// For `if (<expr>)` capture: everything until `)` (no nesting).
-terminal WHEN_TEXT: /[^)\r\n]+/;
 
 // ---------------------------------------------------------------------------
 // Grammar
 // ---------------------------------------------------------------------------
 
 entry Document:
-  VarsBlock? scenes+=Scene*;
+  IgnoredTop* VarsBlock? IgnoredTop* (scenes+=Scene IgnoredTop*)*;
+
+IgnoredTop returns string:
+    NL
+  | COMMENT NL;
 
 VarsBlock:
   'vars:' NL
   vars+=VarLine*;
 
 VarLine:
-  IND2 name=ID BLANK? '=' BLANK? value=VarValue BLANK? NL;
+  IND2 name=ID '=' value=VarValue NL;
 
 VarValue returns string:
     SIGNED_NUMBER
@@ -49,9 +51,16 @@ VarValue returns string:
   | STRING;
 
 Scene:
-  name=ID BLANK? '{' BLANK? NL
+    MultiLineScene
+  | InlineScene;
+
+MultiLineScene:
+  name=ID '{' NL
     (items+=SceneItem | IgnoredLine)*
-  '}' BLANK? NL?;
+  '}' NL?;
+
+InlineScene:
+  name=ID '{' texts+=STRING+ '}' NL?;
 
 SceneItem:
     ChoiceBlock
@@ -59,31 +68,62 @@ SceneItem:
   | ScriptLine;
 
 IgnoredLine returns string:
-    BLANK? NL
-  | BLANK? COMMENT BLANK? NL;
+    NL
+  | COMMENT NL;
 
 TextLine:
-  IND2 texts+=STRING+ BLANK? NL;
+  IND2 texts+=STRING+ NL;
 
 ScriptLine:
-  IND2 code=LINE_TEXT NL;
+  IND2 codeTokens+=ScriptToken+ NL;
+
+ScriptToken returns string:
+    ID
+  | STRING
+  | SIGNED_NUMBER
+  | 'true'
+  | 'false'
+  | 'if'
+  | LE
+  | GE
+  | LT
+  | GT
+  | '='
+  | '('
+  | ')'
+  | ','
+  | '.';
 
 ChoiceBlock:
-  IND2 'choices:' BLANK? NL
+  IND2 'choices:' NL
   choices+=ChoiceLine*;
 
 ChoiceLine:
-    IND4 IfChoice
-  | IND4 PlainChoice;
+  IND4 (IfChoice | PlainChoice);
 
 IfChoice:
-  'if' BLANK? '(' cond=WhenExpr ')' BLANK text=STRING BLANK? '->' BLANK? action=ChoiceAction BLANK? NL?;
+  'if' '(' cond=WhenExpr ')' text=STRING '->' action=ChoiceAction NL?;
 
 PlainChoice:
-  text=STRING BLANK? '->' BLANK? action=ChoiceAction BLANK? NL?;
+  text=STRING '->' action=ChoiceAction NL?;
 
 WhenExpr:
-  cond=WHEN_TEXT;
+  condTokens+=WhenToken+;
+
+WhenToken returns string:
+    ID
+  | STRING
+  | SIGNED_NUMBER
+  | 'true'
+  | 'false'
+  | LE
+  | GE
+  | LT
+  | GT
+  | '='
+  | '('
+  | ','
+  | '.';
 
 ChoiceAction:
     InlineAction
@@ -91,21 +131,29 @@ ChoiceAction:
   | BlockActionNextLine;
 
 InlineAction:
-  '{' BLANK? code=INLINE_ACTION_TEXT BLANK? '}';
+  '{' codeTokens+=ScriptToken* '}';
 
 BlockActionSameLine:
-  '{' BLANK? NL
-  block=ActionBlock;
+  '{' NL
+  block=ActionBlockSameLine;
 
 BlockActionNextLine:
   NL
-  IND6 '{' BLANK? NL
-  block=ActionBlock;
+  IND6 '{' NL
+  block=ActionBlockNextLine;
 
-ActionBlock:
-  lines+=ActionLine*
-  IND6 '}' BLANK? NL?;
+ActionBlockSameLine:
+  lines+=ActionLine6*
+  IND4 '}' NL?;
 
-ActionLine:
-  IND8 code=LINE_TEXT NL;
+ActionLine6:
+  IND6 codeTokens+=ScriptToken+ NL;
+
+ActionBlockNextLine:
+  lines+=ActionLine8*
+  IND6 '}' NL?;
+
+ActionLine8:
+  IND8 codeTokens+=ScriptToken+ NL;
+
 
