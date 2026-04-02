@@ -6,7 +6,7 @@
 | ---------------------------- | ------------- | --------------------------------------------------------------------- |
 | DSL 파서 (`parseScene.ts`)   | ✅ 기본 동작  | Langium 기반(`parseIyagi` → `astToStory`)으로 동작                    |
 | 스토리 로드 (`current.ts`)   | ✅ `.iyagi`만 | `scenarios/`에서 첫 파일을 사용 |
-| 스토리 엔진 (`engine.ts`)    | ✅ 기본 동작  | advance / choose 중심                                                 |
+| 스토리 엔진 (`src/hooks/useStoryEngine.ts`) | ✅ 기본 동작  | advance / choose 중심                                                 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작  | jump, set, inc, dec 등                                                |
 | UI (`App.tsx`)               | 🔶 최소 구현  | 단일 화면, 타이틀/엔딩 분리 없음; dev 변수 오버레이만 (씬 그래프 → 2-5) |
 | 세이브/로드                  | ❌ 미구현     | 스냅샷 API·UI·저장 전부 없음                                          |
@@ -88,7 +88,7 @@ choices:
 - [x] `types.ts` — `enabledWhen`
 - [x] `App.tsx` — 비활성·툴팁·클릭 차단
 - [x] `story/evalWhen.ts` — mathjs 파싱 + `==`/`!=` AST를 `seq`(===)로 치환, 문자열 리터럴 비교 지원
-- [ ] (선택) `engine.ts` — `choose()` 진입 시 `enabledWhen` 재검사(악의적 호출·미래 API 대비)
+- [ ] (선택) `useStoryPlay` — `choose()` 진입 시 `enabledWhen` 재검사(악의적 호출·미래 API 대비)
 
 ### 1-2. 세이브/로드 (localStorage)
 
@@ -96,7 +96,7 @@ choices:
 
 **작업:**
 
-- [ ] `engine.ts` — 스냅샷 getter/setter(및 필요 시 `restart`) 추가
+- [ ] `useStoryPlay` — 스냅샷 getter(및 필요 시 `restart`) 추가
 - [ ] `useStoryEngine` 내부에 자동저장 (`useEffect` + `localStorage`) 추가
 - [ ] 앱 시작 시 저장된 스냅샷이 있으면 복원 여부 물어보기
 - [ ] 타이틀 화면에 "이어하기 / 새 게임" 버튼 추가
