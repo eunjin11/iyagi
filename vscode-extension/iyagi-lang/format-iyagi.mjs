@@ -513,9 +513,9 @@ function formatFile(src) {
 		i++;
 	}
 
-	// Ensure trailing newline (common preference)
+	// Ensure exactly one trailing newline (idempotent on save)
 	const body = out.join("\n").replace(/[ \t]+$/gm, "");
-	return `${body}\n`;
+	return `${body.replace(/\r?\n+$/g, "")}\n`;
 }
 
 /**

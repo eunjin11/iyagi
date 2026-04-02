@@ -11,7 +11,7 @@
 		"onCommand:iyagi.formatDocument"
 	],
 	"scripts": {
-		"vsix": "yarn dlx @vscode/vsce package --no-dependencies --allow-missing-repository --out dist/iyagi-lang-$(node -p \"require('./package.json').version\").vsix"
+		"vsix": "yarn dlx @vscode/vsce@3.3.2 package --no-dependencies --allow-missing-repository --out dist/iyagi-lang-$(node -p \"require('./package.json').version\").vsix"
 	},
 	"engines": {
 		"vscode": "^1.90.0"
