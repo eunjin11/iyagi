@@ -17,6 +17,7 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check .",
+    "langium:generate": "langium generate --file langium-config.json",
     "vsix": "yarn workspace iyagi-lang vsix"
   },
   "dependencies": {
@@ -33,6 +34,8 @@
     "@vanilla-extract/css": "^1.15.3",
     "@vanilla-extract/vite-plugin": "^4.0.7",
     "@vitejs/plugin-react": "^4.3.4",
+    "langium": "^4.2.1",
+    "langium-cli": "^4.2.0",
     "typescript": "^5.6.2",
     "vite": "^5.4.8",
     "vitest": "^3.2.4"
