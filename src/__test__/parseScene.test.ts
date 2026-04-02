@@ -28,6 +28,12 @@ a {
 			const { story, errors } = parseDSL(src);
 			expect(errors).toEqual([]);
 			expect(story.init).toEqual({ hp: 10, gold: 0, alive: true, tag: "x" });
+			expect(story.varDefs).toEqual([
+				{ name: "hp", init: 10 },
+				{ name: "gold", init: 0 },
+				{ name: "alive", init: true },
+				{ name: "tag", init: "x" },
+			]);
 		});
 
 		it("opts.init이 DSL vars보다 우선 병합", () => {
@@ -40,6 +46,10 @@ s { "x" }
 `;
 			const { story } = parseDSL(src, { init: { gold: 99 } });
 			expect(story.init).toEqual({ hp: 10, gold: 99 });
+			expect(story.varDefs).toEqual([
+				{ name: "hp", init: 10 },
+				{ name: "gold", init: 0 },
+			]);
 		});
 	});
 

@@ -75,7 +75,11 @@ export function applyStoryEvent(
 	story: Story,
 ): StoryEngineState {
 	if (event.type === "RUN_SCRIPT") {
-		const { vars, jumpTo } = runScriptWithResult(event.code, state.vars);
+		const { vars, jumpTo } = runScriptWithResult(
+			event.code,
+			state.vars,
+			story.varDefs,
+		);
 		return storyReducer(
 			state,
 			{ type: "SCRIPT_DONE", context: event.context, vars, jumpTo },

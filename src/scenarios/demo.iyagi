@@ -21,12 +21,12 @@ forest {
   choices:
     "열매를 따서 먹는다 (HP+1)" ->
       {
-        inc("hp", 1)
+        addHp(1)
         jump("after_fruit")
       }
     "더 깊이 들어간다 (HP-2)" ->
       {
-        dec("hp", 2)
+        subHp(2)
         jump("deep")
       }
 }

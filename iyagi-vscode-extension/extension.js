@@ -2,6 +2,72 @@ import * as vscode from "vscode";
 import { formatText } from "./format-iyagi.mjs";
 
 const ALLOWED_INDENTS = new Set([0, 2, 4, 6, 8]);
+const COMPLETION_TRIGGER_CHARS = [
+	..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_",
+];
+
+function parseVarsBlock(src) {
+	const lines = src.split(/\r?\n/);
+	let i = 0;
+	while (i < lines.length) {
+		const raw = lines[i];
+		const trimmed = raw.trim();
+		if (trimmed === "" || trimmed.startsWith("//")) {
+			i++;
+			continue;
+		}
+		if (trimmed === "vars:") break;
+		return [];
+	}
+	if (i >= lines.length) return [];
+	i++; // next line after vars:
+
+	/** @type {{name: string, init: number|string|boolean}[]} */
+	const defs = [];
+	for (; i < lines.length; i++) {
+		const raw = lines[i];
+		if (raw.trim() === "" || raw.trim().startsWith("//")) continue;
+
+		// vars lines are exactly 2-space indented in grammar, but be lenient.
+		const m = /^\s{2}([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+?)\s*$/.exec(raw);
+		if (!m) break;
+
+		const name = m[1];
+		const valueRaw = m[2];
+
+		let init;
+		if (valueRaw === "true") init = true;
+		else if (valueRaw === "false") init = false;
+		else if (/^-?\d+(\.\d+)?$/.test(valueRaw)) init = Number(valueRaw);
+		else if (
+			valueRaw.length >= 2 &&
+			valueRaw.startsWith('"') &&
+			valueRaw.endsWith('"')
+		) {
+			init = valueRaw
+				.slice(1, -1)
+				.replace(/\\(.)/g, "$1");
+		} else {
+			// fallback: treat as string (keeps completion useful)
+			init = String(valueRaw);
+		}
+
+		defs.push({ name, init });
+	}
+	return defs;
+}
+
+function capFirst(s) {
+	if (!s) return s;
+	return s[0].toUpperCase() + s.slice(1);
+}
+
+function isProbablyInScriptContext(linePrefix) {
+	// Avoid suggesting functions in dialogue lines like:   "text ..."
+	const t = linePrefix.trimStart();
+	if (t.startsWith('"')) return false;
+	return true;
+}
 
 function isBlankOrComment(line) {
 	const trimmed = line.trim();
@@ -97,6 +163,84 @@ export function activate(context) {
 	);
 
 	context.subscriptions.push(provider);
+
+	// Completion: vars 기반 자동 헬퍼 + 기본 액션
+	context.subscriptions.push(
+		vscode.languages.registerCompletionItemProvider(
+			selector,
+			{
+				provideCompletionItems(document, position) {
+					const line = document.lineAt(position.line);
+					const prefix = line.text.slice(0, position.character);
+					if (!isProbablyInScriptContext(prefix)) return [];
+
+					const builtins = [
+						{ name: "jump", snippet: 'jump("${1:sceneId}")' },
+						{ name: "set", snippet: 'set("${1:key}", ${2:value})' },
+						{ name: "inc", snippet: 'inc("${1:key}", ${2:1})' },
+						{ name: "dec", snippet: 'dec("${1:key}", ${2:1})' },
+					];
+
+					const vars = parseVarsBlock(document.getText());
+					/** @type {vscode.CompletionItem[]} */
+					const items = [];
+
+					for (const b of builtins) {
+						const it = new vscode.CompletionItem(
+							b.name,
+							vscode.CompletionItemKind.Function,
+						);
+						it.insertText = new vscode.SnippetString(b.snippet);
+						it.detail = "iyagi built-in action";
+						items.push(it);
+					}
+
+					for (const def of vars) {
+						const Name = capFirst(def.name);
+						if (typeof def.init === "number") {
+							for (const { n, s } of [
+								{ n: `set${Name}`, s: `set${Name}($1)` },
+								{ n: `add${Name}`, s: `add${Name}($1)` },
+								{ n: `sub${Name}`, s: `sub${Name}($1)` },
+							]) {
+								const it = new vscode.CompletionItem(
+									n,
+									vscode.CompletionItemKind.Function,
+								);
+								it.insertText = new vscode.SnippetString(s);
+								it.detail = `vars helper (${def.name}: number)`;
+								items.push(it);
+							}
+						} else if (typeof def.init === "boolean") {
+							for (const { n, s } of [
+								{ n: `set${Name}`, s: `set${Name}($1)` },
+								{ n: `toggle${Name}`, s: `toggle${Name}()` },
+							]) {
+								const it = new vscode.CompletionItem(
+									n,
+									vscode.CompletionItemKind.Function,
+								);
+								it.insertText = new vscode.SnippetString(s);
+								it.detail = `vars helper (${def.name}: boolean)`;
+								items.push(it);
+							}
+						} else {
+							const it = new vscode.CompletionItem(
+								`set${Name}`,
+								vscode.CompletionItemKind.Function,
+							);
+							it.insertText = new vscode.SnippetString(`set${Name}($1)`);
+							it.detail = `vars helper (${def.name}: string)`;
+							items.push(it);
+						}
+					}
+
+					return items;
+				},
+			},
+			...COMPLETION_TRIGGER_CHARS,
+		),
+	);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("iyagi.formatDocument", async () => {
