@@ -5,7 +5,7 @@
 | 레이어                       | 완성도        | 비고                                                                  |
 | ---------------------------- | ------------- | --------------------------------------------------------------------- |
 | DSL 파서 (`parseScene.ts`)   | ✅ 기본 동작  | 수동 파서; Langium 전환은 Phase 2-4                                   |
-| 스토리 로드 (`current.ts`)   | ✅ `.story`만 | `scenarios/` 우선, 없으면 `example/demo.story`(init 등 옵션 하드코딩) |
+| 스토리 로드 (`current.ts`)   | ✅ `.iyagi`만 | `scenarios/` 우선, 없으면 `example/demo.iyagi`(init 등 옵션 하드코딩) |
 | 스토리 엔진 (`engine.ts`)    | ✅ 기본 동작  | advance / choose 중심                                                 |
 | Actions (`actions/index.ts`) | ✅ 기본 동작  | jump, set, inc, dec 등                                                |
 | UI (`App.tsx`)               | 🔶 최소 구현  | 단일 화면, 타이틀/엔딩 분리 없음; dev 변수 오버레이만 (씬 그래프 → 2-5) |
@@ -111,7 +111,7 @@ start {
   - `varDefs` 순회하며 타입별 헬퍼 함수 동적 생성
   - 하드코딩된 `setHeart`, `addHeart`, `setGold`, `addGold` 제거
 - [ ] `engine.ts` — `runScript` / `createActions` 호출 시 `story.varDefs` 전달
-- [ ] `demo.story` — `vars:` 블록 방식으로 마이그레이션; `init`은 `current.ts`의 경로별 옵션 또는 DSL `vars:`로 통일
+- [ ] `demo.iyagi` — `vars:` 블록 방식으로 마이그레이션; `init`은 `current.ts`의 경로별 옵션 또는 DSL `vars:`로 통일
 
 ---
 
@@ -143,11 +143,11 @@ show (gold >= 5): "주머니가 묵직하다."
 
 ### 2-3. `scenarios/` 폴더 스토리 목록 UI
 
-현재 `current.ts`는 `*.story`만 로드하며, 여러 개일 때 첫 파일만 자동 선택된다.
+현재 `current.ts`는 `*.iyagi`만 로드하며, 여러 개일 때 첫 파일만 자동 선택된다.
 
 **작업:**
 
-- [ ] 타이틀 화면에서 `scenarios/` 내 모든 `.story` 목록 표시
+- [ ] 타이틀 화면에서 `scenarios/` 내 모든 `.iyagi` 목록 표시
 - [ ] 스토리 선택 → 플레이 진입
 
 ### 2-4. Langium 기반 DSL 파서 (`langium-cli`)
@@ -179,7 +179,7 @@ show (gold >= 5): "주머니가 묵직하다."
 
 ### 2-5. 디버그: 씬 그래프 팝업 (노드·링크 뷰)
 
-Twine의 패시지 맵처럼 **파싱된 `Story`를 방향 그래프로 보여 주는 읽기 전용 뷰**. 저작자가 분기·순환·고립 씬을 한눈에 확인하기 위함. 실시간 `.story` 편집·역파서는 범위 밖(별도 에디터 과제).
+Twine의 패시지 맵처럼 **파싱된 `Story`를 방향 그래프로 보여 주는 읽기 전용 뷰**. 저작자가 분기·순환·고립 씬을 한눈에 확인하기 위함. 실시간 `.iyagi` 편집·역파서는 범위 밖(별도 에디터 과제).
 
 **데이터:**
 
@@ -198,11 +198,11 @@ Twine의 패시지 맵처럼 **파싱된 `Story`를 방향 그래프로 보여 �
 **작업:**
 
 - [ ] `src/story/` 또는 `src/debug/` — `storyToGraph(story): { nodes; edges }` 순수 함수 + `jump` 추출 헬퍼
-- [ ] 단위 테스트 — 샘플 `story` 또는 `demo.story` 파싱 결과로 간선 개수·대상 씬 ID 기대값 검증
+- [ ] 단위 테스트 — 샘플 `story` 또는 `demo.iyagi` 파싱 결과로 간선 개수·대상 씬 ID 기대값 검증
 - [ ] 의존성 추가 — 그래프 라이브러리 + (선택) 레이아웃 패키지
 - [ ] `App.tsx`(또는 `src/debug/StoryGraphModal.tsx`) — dev 버튼, 모달, 그래프 마운트
 - [ ] README 또는 본 항목에 **한계** 명시: 동적 `jump`, 런타임만 도달하는 분기는 정적 그래프와 불일치 가능
-- [ ] (후순위/Twine 급) 노드 배치·연결 편집이 `.story` 파일에 반영되는 **비주얼 에디터**는 별도 Phase로 쪼개기
+- [ ] (후순위/Twine 급) 노드 배치·연결 편집이 `.iyagi` 파일에 반영되는 **비주얼 에디터**는 별도 Phase로 쪼개기
 
 ---
 
@@ -252,11 +252,11 @@ Twine의 패시지 맵처럼 **파싱된 `Story`를 방향 그래프로 보여 �
 **작업:**
 
 - [x] Vitest 설치 및 설정 (`vitest.config.ts`, `package.json` scripts)
-- [x] `src/__test__/parseScene.test.ts` — vars, 씬/선택지(한 줄·멀티라인), `if` 조건부 선택, `demo.story` 통합, 에러 케이스
+- [x] `src/__test__/parseScene.test.ts` — vars, 씬/선택지(한 줄·멀티라인), `if` 조건부 선택, `demo.iyagi` 통합, 에러 케이스
 - [x] `src/__test__/actions.test.ts` — `runScript`, `inc`/`dec`/`set`, `jump`, 커스텀 `heal`, ReferenceError
 - [x] `src/__test__/evalWhen.test.ts` — 리터럴·비교·논리·문자열 `==` 등
 - [x] `src/__test__/storyReducer.test.ts` — 이벤트/리듀서 스모크
-- [ ] (선택) `test/fixtures/*.story` 파일 분리, CI 연동
+- [ ] (선택) `test/fixtures/*.iyagi` 파일 분리, CI 연동
 
 ---
 
@@ -334,7 +334,7 @@ Twine의 패시지 맵처럼 **파싱된 `Story`를 방향 그래프로 보여 �
 
 - [ ] **`@…/core`** (또는 `packages/core`): `parseDSL`, `runScript`, `useStoryEngine`, 타입 — **UI·스토리 로드 없음**
 - [ ] **`@…/react`** (선택): 현재 `App` 수준 뷰 컴포넌트
-- [ ] **호스트 앱:** `.story` 로드(`glob`/`fetch`), `currentStory` 조립, **프로젝트 전용 `customActions.ts`**
+- [ ] **호스트 앱:** `.iyagi` 로드(`glob`/`fetch`), `currentStory` 조립, **프로젝트 전용 `customActions.ts`**
 - [ ] 버전 정책(semver)과 브레이킹 변경 시 마이그레이션 노트
 
 ### 6-4. 문서 · 온보딩

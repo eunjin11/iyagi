@@ -11,7 +11,7 @@ import { parseDSL } from '../parser/parseScene';
 
 function demoStorySource(): string {
   const __dirname = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(join(__dirname, '../example/demo.story'), 'utf-8');
+  return readFileSync(join(__dirname, '../example/demo.iyagi'), 'utf-8');
 }
 
 function getScene(story: Story, sceneId: string) {

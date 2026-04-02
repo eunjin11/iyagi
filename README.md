@@ -1,6 +1,6 @@
-# text-rpg
+# iyagi
 
-모바일 우선 텍스트 어드벤처용 **스토리 DSL**과 **플레이 엔진**(React)을 포함한 작은 모노레포형 앱입니다. `.story` 파일을 파싱해 씬·대사·선택지·변수를 구동합니다.
+`iyagi`는 모바일 우선 텍스트 게임을 위한 **스토리 DSL**과 **플레이 엔진**(React)입니다. `.iyagi` 파일을 파싱해 씬·대사·선택지·변수를 구동합니다.
 
 ## 스택
 
@@ -18,9 +18,9 @@ yarn test     # Vitest
 yarn build && yarn preview
 ```
 
-## 스토리 파일 (`.story`)
+## 스토리 파일 (`.iyagi`)
 
-공개 진입점은 **`parseDSL`** — 예시는 [`src/example/demo.story`](src/example/demo.story) 참고.
+공개 진입점은 **`parseDSL`** — 예시는 [`src/example/demo.iyagi`](src/example/demo.iyagi) 참고.
 
 - **`vars:`** — 초기 변수 (`hp = 10` 등). 파싱 결과는 `Story.init`에 들어가며, `parseDSL(..., { init })`로 덮어쓸 수 있음.
 - **`sceneId { ... }`** — 씬 본문
@@ -34,23 +34,23 @@ yarn build && yarn preview
 
 ## 스토리 로드
 
-- [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.story`가 있으면 그중 첫 파일을, 없으면 `src/example/demo.story`를 사용합니다.
-- 로컬 시나리오를 쓰려면 `src/scenarios/`에 `.story`를 두면 됩니다 (환경에 따라 gitignore될 수 있음).
+- [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.iyagi`가 있으면 그중 첫 파일을, 없으면 `src/example/demo.iyagi`를 사용합니다.
+- 로컬 시나리오를 쓰려면 `src/scenarios/`에 `.iyagi`를 두면 됩니다 (환경에 따라 gitignore될 수 있음).
 
 ## 주요 소스 구조
 
 ```
 src/
-  parser/parseScene.ts    # parseDSL, .story 파서
+  parser/parseScene.ts    # parseDSL, .iyagi 파서
   story/
     types.ts              # Story, Scene, Choice, Step
     engine.ts             # useStoryEngine (advance / choose)
     storyReducer.ts       # 상태 전이 (스크립트는 runScriptWithResult와 결합)
     evalWhen.ts           # 선택지 조건 평가
-    current.ts            # 어떤 .story를 쓸지 선택
+    current.ts            # 어떤 .iyagi를 쓸지 선택
   actions/index.ts        # runScript, 내장 액션 + customActions
   App.tsx                 # 플레이 UI
-  example/demo.story      # 샘플 시나리오
+  example/demo.iyagi      # 샘플 시나리오
 ```
 
 ## 테스트
