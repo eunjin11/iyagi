@@ -30,6 +30,7 @@ describe("snapshot rollback (SET_SNAPSHOT)", () => {
       sceneId: s0.sceneId,
       stepIndex: s0.stepIndex,
       vars: { ...s0.vars },
+      storyLog: [...s0.storyLog],
     };
 
     // a(0) -> SCRIPT_DONE(jumpTo b)로 씬 이동 + vars 변경
@@ -77,6 +78,7 @@ describe("snapshot rollback (SET_SNAPSHOT)", () => {
       sceneId: s0.sceneId,
       stepIndex: s0.stepIndex,
       vars: { ...s0.vars },
+      storyLog: [...s0.storyLog],
     };
 
     const rolledBack = storyReducer(

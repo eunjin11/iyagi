@@ -1,5 +1,6 @@
 import { runScriptWithResult } from "./runScriptWithResult";
-import type { Scene, Story, VariableBag } from "./types";
+import type { StoryLogEntry } from "./storyLog";
+import type { Choice, Scene, Story, VariableBag } from "./types";
 
 // ---------------------------------------------------------------------------
 // state / events
@@ -9,6 +10,7 @@ export type StoryEngineState = {
   sceneId: string;
   stepIndex: number;
   vars: VariableBag;
+  storyLog: StoryLogEntry[];
 };
 
 /** `useReducer`에만 넘기는 순수 전이 (스크립트 실행 없음). */
@@ -17,6 +19,7 @@ export type StoryReducerEvent =
   | {
       type: "SCRIPT_DONE";
       context: "step" | "choice";
+      code?: string;
       vars: VariableBag;
       jumpTo: string | null;
     }
@@ -29,7 +32,8 @@ export type StoryReducerEvent =
  */
 export type StoryEvent =
   | StoryReducerEvent
-  | { type: "RUN_SCRIPT"; context: "step" | "choice"; code: string };
+  | { type: "RUN_SCRIPT"; context: "step" | "choice"; code: string }
+  | { type: "CHOOSE"; choice: Choice };
 
 function emptyScene(id: string): Scene {
   return { id, steps: [], choices: [] };
@@ -52,18 +56,45 @@ export function storyReducer(
       const scene = story.scenes[state.sceneId] ?? emptyScene(state.sceneId);
       const step = scene.steps[state.stepIndex];
       if (!step || step.type !== "text") return state;
-      return { ...state, stepIndex: state.stepIndex + 1 };
+      const nextLog: StoryLogEntry = {
+        kind: "text",
+        sceneId: state.sceneId,
+        content: step.content,
+      };
+      return {
+        ...state,
+        stepIndex: state.stepIndex + 1,
+        storyLog: [...state.storyLog, nextLog],
+      };
     }
 
     case "SCRIPT_DONE": {
-      const next: StoryEngineState = { ...state, vars: event.vars };
+      const logs: StoryLogEntry[] = [];
+      if (event.context === "step" && event.code) {
+        logs.push({ kind: "script", sceneId: state.sceneId, code: event.code });
+      }
+
+      const nextBase: StoryEngineState = {
+        ...state,
+        vars: event.vars,
+        storyLog:
+          logs.length > 0 ? [...state.storyLog, ...logs] : state.storyLog,
+      };
       if (event.jumpTo) {
-        return { ...next, sceneId: event.jumpTo, stepIndex: 0 };
+        return {
+          ...nextBase,
+          sceneId: event.jumpTo,
+          stepIndex: 0,
+          storyLog: [
+            ...nextBase.storyLog,
+            { kind: "enterScene", sceneId: event.jumpTo },
+          ],
+        };
       }
       if (event.context === "step") {
-        return { ...next, stepIndex: state.stepIndex + 1 };
+        return { ...nextBase, stepIndex: state.stepIndex + 1 };
       }
-      return next;
+      return nextBase;
     }
   }
 }
@@ -74,6 +105,25 @@ export function applyStoryEvent(
   event: StoryEvent,
   story: Story,
 ): StoryEngineState {
+  if (event.type === "CHOOSE") {
+    const next: StoryEngineState = {
+      ...state,
+      storyLog: [
+        ...state.storyLog,
+        {
+          kind: "choice",
+          sceneId: state.sceneId,
+          text: event.choice.text,
+          script: event.choice.script,
+        },
+      ],
+    };
+    return applyStoryEvent(
+      next,
+      { type: "RUN_SCRIPT", context: "choice", code: event.choice.script },
+      story,
+    );
+  }
   if (event.type === "RUN_SCRIPT") {
     const { vars, jumpTo } = runScriptWithResult(
       event.code,
@@ -82,7 +132,13 @@ export function applyStoryEvent(
     );
     return storyReducer(
       state,
-      { type: "SCRIPT_DONE", context: event.context, vars, jumpTo },
+      {
+        type: "SCRIPT_DONE",
+        context: event.context,
+        code: event.code,
+        vars,
+        jumpTo,
+      },
       story,
     );
   }
@@ -94,5 +150,6 @@ export function initialEngineState(story: Story): StoryEngineState {
     sceneId: story.start,
     stepIndex: 0,
     vars: { ...(story.init ?? {}) },
+    storyLog: [{ kind: "enterScene", sceneId: story.start }],
   };
 }

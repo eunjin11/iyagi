@@ -65,11 +65,7 @@ function chooseByText(
   if (!choice) throw new Error(`choice not found: ${choiceText}`);
   expect(enabledChoice(choice, s.vars)).toBe(true);
 
-  s = applyStoryEvent(
-    s,
-    { type: "RUN_SCRIPT", context: "choice", code: choice.script },
-    story,
-  );
+  s = applyStoryEvent(s, { type: "CHOOSE", choice }, story);
   return s;
 }
 
@@ -80,7 +76,7 @@ function expectAtDoneScene(story: Story, s: StoryEngineState, sceneId: string) {
 }
 
 describe("e2e endings (engine simulation)", () => {
-  const parsed = parseDSL(demoStorySource(), { title: "여행", start: "start" });
+  const parsed = parseDSL(demoStorySource(), { start: "start" });
   expect(parsed.errors).toEqual([]);
   const story = parsed.story;
 

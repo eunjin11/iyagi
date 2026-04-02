@@ -1,21 +1,20 @@
 import { DebugOverlay } from "../components/dev/DebugOverlay";
 import { ChoiceList } from "../components/story/ChoiceList";
+import { GameMenu } from "../components/story/GameMenu";
 import { StoryLogPanel } from "../components/story/StoryLogPanel";
 import { StoryPanel } from "../components/story/StoryPanel";
+import { useStoryEngine } from "../hooks/useStoryEngine";
 import { currentStory } from "../story/current";
-import { useStoryEngine } from "../story/engine";
+import type { StoryEngineState } from "../story/storyReducer";
 import { interpolateVars } from "../utils/interpolateVars";
-import {
-  actionButton,
-  actionRow,
-  card,
-  content,
-  header,
-  logTriggerRow,
-  title,
-} from "./playPage.css";
+import * as css from "./playPage.css.ts";
 
-const PlayPage = () => {
+type Props = {
+  resumeState?: StoryEngineState | null;
+};
+
+const PlayPage = ({ resumeState = null }: Props) => {
+  const { play, saves } = useStoryEngine(currentStory, resumeState);
   const {
     story,
     currentStep,
@@ -26,7 +25,8 @@ const PlayPage = () => {
     storyLog,
     advance,
     choose,
-  } = useStoryEngine(currentStory);
+  } = play;
+  const { save, listSaves, load, deleteSave } = saves;
 
   const isDev = import.meta.env.DEV === true;
   const canAdvance = Boolean(currentStep);
@@ -34,13 +34,20 @@ const PlayPage = () => {
 
   return (
     <>
-      <header className={header}>
-        <h1 className={title}>{story.title}</h1>
+      <header className={css.header}>
+        <div style={{ width: 44 }} aria-hidden />
+        <h1 className={css.title}>{story.title}</h1>
+        <GameMenu
+          onSave={save}
+          listSaves={listSaves}
+          onLoad={load}
+          onDeleteSave={deleteSave}
+        />
       </header>
 
-      <main className={content}>
+      <main className={css.content}>
         <StoryPanel
-          className={card}
+          className={css.card}
           pastTexts={pastTexts}
           currentText={currentStep?.content ?? null}
           canAdvance={canAdvance}
@@ -48,22 +55,24 @@ const PlayPage = () => {
           interpolate={interpolate}
         />
 
-        <ChoiceList
-          isDone={isDone}
-          choices={choices}
-          vars={vars}
-          onChoose={choose}
-          className={actionRow}
-          buttonClassName={actionButton}
-        />
+        <div className={css.choiceSlot}>
+          <ChoiceList
+            isDone={isDone}
+            choices={choices}
+            vars={vars}
+            onChoose={choose}
+            className={css.actionRow}
+            buttonClassName={css.actionButton}
+          />
+        </div>
 
         {isDone && choices.length === 0 && (
-          <section className={card} aria-label="ending">
+          <section className={css.card} aria-label="ending">
             <div style={{ opacity: 0.6, textAlign: "center" }}>— END —</div>
           </section>
         )}
 
-        <div className={logTriggerRow}>
+        <div className={css.logTriggerBar}>
           <StoryLogPanel
             storyLog={storyLog}
             isDev={isDev}

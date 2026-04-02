@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import QuitModal from "./components/ui/QuitModal";
 import MainPage from "./pages/MainPage";
 import PlayPage from "./pages/PlayPage";
-import { appRoot } from "./styles/app.css";
+import type { StoryEngineState } from "./story/storyReducer";
+import * as css from "./styles/app.css.ts";
 
 const App = () => {
   const [screen, setScreen] = useState<"main" | "play">("main");
+  const [playResumeState, setPlayResumeState] =
+    useState<StoryEngineState | null>(null);
   const [showQuitModal, setShowQuitModal] = useState(false);
 
   useEffect(() => {
@@ -21,6 +24,7 @@ const App = () => {
 
   const handleConfirmQuit = () => {
     setShowQuitModal(false);
+    setPlayResumeState(null);
     setScreen("main");
   };
 
@@ -31,8 +35,8 @@ const App = () => {
 
   if (screen === "play") {
     return (
-      <div className={appRoot}>
-        <PlayPage />
+      <div className={css.appRoot}>
+        <PlayPage resumeState={playResumeState} />
         {showQuitModal && (
           <QuitModal
             onConfirm={handleConfirmQuit}
@@ -42,7 +46,18 @@ const App = () => {
       </div>
     );
   }
-  return <MainPage onStart={() => setScreen("play")} />;
+  return (
+    <MainPage
+      onStart={() => {
+        setPlayResumeState(null);
+        setScreen("play");
+      }}
+      onContinueWithSave={(entry) => {
+        setPlayResumeState(entry.snapshot);
+        setScreen("play");
+      }}
+    />
+  );
 };
 
 export default App;

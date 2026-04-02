@@ -110,9 +110,13 @@ const story = {
 ```
 src/
   parser/parseScene.ts    # parseDSL, .iyagi 파서
+  hooks/
+    useStoryEngine.ts     # useStoryEngine (advance / choose + save/load)
+    useStoryPlay.ts       # 플레이 상태/전이 래퍼
+    useSaveEngine.ts      # 세이브/로드(localStorage) 훅
   story/
     types.ts              # Story, Scene, Choice, Step (+ vars 메타: varDefs)
-    engine.ts             # useStoryEngine (advance / choose)
+    engineDerived.ts     # 상태 -> UI 파생(derive)
     storyReducer.ts       # 상태 전이 (스크립트는 runScriptWithResult와 결합)
     evalWhen.ts           # 선택지 조건 평가
     current.ts            # 어떤 .iyagi를 쓸지 선택

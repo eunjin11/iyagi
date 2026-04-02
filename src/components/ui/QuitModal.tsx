@@ -1,11 +1,4 @@
-import {
-  buttons,
-  cancelButton,
-  card,
-  confirmButton,
-  overlay,
-  text,
-} from "./quitModal.css";
+import * as css from "./quitModal.css.ts";
 
 type Props = {
   onConfirm: () => void;
@@ -13,14 +6,14 @@ type Props = {
 };
 
 const QuitModal = ({ onConfirm, onCancel }: Props) => (
-  <div className={overlay} role="dialog" aria-modal="true">
-    <div className={card}>
-      <p className={text}>게임을 종료하시겠습니까?</p>
-      <div className={buttons}>
-        <button type="button" className={confirmButton} onClick={onConfirm}>
+  <div className={css.overlay} role="dialog" aria-modal="true">
+    <div className={css.card}>
+      <p className={css.text}>게임을 종료하시겠습니까?</p>
+      <div className={css.buttons}>
+        <button type="button" className={css.confirmButton} onClick={onConfirm}>
           종료
         </button>
-        <button type="button" className={cancelButton} onClick={onCancel}>
+        <button type="button" className={css.cancelButton} onClick={onCancel}>
           계속하기
         </button>
       </div>
