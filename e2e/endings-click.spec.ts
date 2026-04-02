@@ -1,5 +1,10 @@
 import { expect, type Page, test } from "@playwright/test";
 
+async function startGame(page: Page) {
+	await page.goto("/");
+	await page.getByRole("button", { name: "게임 시작하기" }).click();
+}
+
 async function advanceStoryPanelN(page: Page, n: number) {
 	const storyPanel = page.getByRole("button", { name: "story" });
 	for (let i = 0; i < n; i++) {
@@ -9,7 +14,7 @@ async function advanceStoryPanelN(page: Page, n: number) {
 
 test.describe("e2e: click-through endings", () => {
 	test("start -> going_home", async ({ page }) => {
-		await page.goto("/");
+		await startGame(page);
 		await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
 		const storyPanel = page.getByRole("button", { name: "story" });
 
@@ -55,7 +60,7 @@ test.describe("e2e: click-through endings", () => {
 	});
 
 	test("start -> ending", async ({ page }) => {
-		await page.goto("/");
+		await startGame(page);
 		await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
 		const storyPanel = page.getByRole("button", { name: "story" });
 
@@ -80,7 +85,7 @@ test.describe("e2e: click-through endings", () => {
 	});
 
 	test("start -> gameover", async ({ page }) => {
-		await page.goto("/");
+		await startGame(page);
 		await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
 		const storyPanel = page.getByRole("button", { name: "story" });
 
