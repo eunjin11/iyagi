@@ -32,6 +32,57 @@ yarn build && yarn preview
 
 조건식은 JS와 비슷하게 쓰되, mathjs 규칙에 맞게 **`&&` `||` `!`는** 내부에서 `and` / `or` / `not`로 바뀝니다. **`tag == "문자열"`** 처럼 문자열 비교도 지원합니다 (`==`/`!=`는 모두 엄격 동등 의미).
 
+## DSL을 만든 이유
+이 프로젝트는 “스토리 작성”을 핵심으로 두기 때문에, 코드(JSON/JS)로 만들면 반복되는 구조(배열/필드명/중괄호)를 줄이고, 작가가 씬과 선택지를 자연스럽게 적을 수 있도록 **도메인 특화 언어(DSL)**를 만들었습니다.
+
+- JSON/JS는 `Story -> Scene -> Step/Choice` 같은 구조를 매번 전부 써야 해서, 같은 내용 대비 작성량이 커집니다.
+- `.iyagi`에서는 `vars:`, `sceneId { ... }`, `choices:` 같은 “스토리 단위” 문법을 파서가 직접 이해해, 데이터 표현이 간결해집니다.
+- 선택지 조건(`if (...)`)과 스크립트(실행 코드)를 문법 레벨에서 분리해, 조건은 `mathjs`, 실행은 `new Function` 기반 스크립트로 처리하도록 설계를 명확히 했습니다.
+
+## 같은 내용을 더 짧게: `.iyagi` vs JS(Object)
+엔진은 내부적으로 `Story` 타입 객체를 받습니다. 따라서 아래처럼 JS에서 직접 `Story`를 구성할 수도 있지만, 구조가 길어집니다.
+
+### `.iyagi`로 작성(짧고 읽기 쉬움)
+```iyagi
+vars:
+  hp = 10
+  gold = 1
+
+village {
+  choices:
+    if (gold >= 1) "빵을 산다" -> { dec("gold", 1); inc("hp", 2); jump("going_home") }
+    "다시 길로 나온다"       -> { jump("start") }
+}
+```
+
+### JS(Object)로 작성(구조 반복이 많음)
+```js
+const story = {
+  title: "여행",
+  start: "village",
+  init: { hp: 10, gold: 1 },
+  scenes: {
+    village: {
+      id: "village",
+      steps: [],
+      choices: [
+        {
+          text: "빵을 산다",
+          enabledWhen: "gold >= 1",
+          script: 'dec("gold", 1);\ninc("hp", 2);\njump("going_home")',
+        },
+        {
+          text: "다시 길로 나온다",
+          script: 'jump("start")',
+        },
+      ],
+    },
+  },
+};
+```
+
+결론적으로 `.iyagi`는 “스토리 데이터”에만 집중하게 해주고, JS/JSON에서 반복되는 구조 템플릿을 제거해서 훨씬 짧고 깔끔하게 작성할 수 있습니다.
+
 ## 스토리 로드
 
 - [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.iyagi`가 있으면 그중 첫 파일을 사용합니다.
