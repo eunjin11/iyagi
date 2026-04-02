@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import {
+  deleteSavedSnapshot,
+  listSavedSnapshots,
+  type SavedSnapshot,
+  saveSnapshot,
+} from "./snapshots";
+import {
   applyStoryEvent,
   initialEngineState,
   type StoryEngineState,
   type StoryEvent,
 } from "./storyReducer";
-
 import type { Choice, Scene, Step, Story } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -34,6 +39,15 @@ function deriveFromState(story: Story, state: StoryEngineState) {
   const choices: Choice[] = isDone ? scene.choices : [];
 
   return { scene, steps, currentStep, isDone, pastTexts, choices };
+}
+
+function firstTextInScene(story: Story, sceneId: string): string | null {
+  const scene = story.scenes[sceneId];
+  if (!scene) return null;
+  for (const step of scene.steps) {
+    if (step.type === "text" && step.content.trim() !== "") return step.content;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +89,29 @@ export function useStoryEngine(story: Story) {
     dispatch({ type: "CHOOSE", choice });
   }
 
+  const save = useCallback((): SavedSnapshot => {
+    const s = stateRef.current;
+    const label =
+      firstTextInScene(story, s.sceneId)?.slice(0, 40) ??
+      `${s.sceneId} @${s.stepIndex}`;
+    return saveSnapshot(label, s);
+  }, [story]);
+
+  const listSaves = useCallback((): SavedSnapshot[] => {
+    return listSavedSnapshots();
+  }, []);
+
+  const load = useCallback(
+    (entry: SavedSnapshot) => {
+      dispatch({ type: "SET_SNAPSHOT", snapshot: entry.snapshot });
+    },
+    [dispatch],
+  );
+
+  const deleteSave = useCallback((id: string) => {
+    deleteSavedSnapshot(id);
+  }, []);
+
   return {
     story,
     scene,
@@ -86,5 +123,9 @@ export function useStoryEngine(story: Story) {
     storyLog: state.storyLog,
     advance,
     choose,
+    save,
+    listSaves,
+    load,
+    deleteSave,
   };
 }
