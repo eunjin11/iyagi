@@ -7,7 +7,7 @@ export const menuButton = style({
   border: "none",
   color: vars.color.textMuted,
   cursor: "pointer",
-  fontSize: 22,
+  fontSize: 36,
   lineHeight: 1,
   padding: vars.space.sm,
   borderRadius: vars.radius.sm,
