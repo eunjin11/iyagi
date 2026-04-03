@@ -6,8 +6,8 @@
 
 - **React 18** + **TypeScript** + **Vite 5**
 - 스타일: **Vanilla Extract**
-- 선택지 **조건식**: **mathjs** (파싱 후 `==`/`!=`는 엄격 동등으로 치환)
-- 씬/선택 **스크립트**: `jump`, `set`, `inc`, `dec` 등 — 내부적으로 `new Function`으로 실행 ([보안 전제는 `Todo.md` 참고](Todo.md))
+- `.iyagi` 파싱: **langium**
+- 씬/선택 **스크립트**: `jump`, `set`, `inc`, `dec` 등 — 내부적으로 `new Function`으로 실행
 
 ## 시작하기
 
@@ -31,7 +31,7 @@ yarn build && yarn preview
 
 ## 스토리 파일 (`.iyagi`)
 
-공개 진입점은 **`parseDSL`** — 예시는 [`src/scenarios/demo.iyagi`](src/scenarios/demo.iyagi) 참고.
+공개 진입점은 **`parseDSL`** — 예시는 [`src/scenarios/demo.iyagi`](src/scenarios/demo.iyagi) 참고
 
 - **`vars:`** — 초기 변수 (`hp = 10` 등).
   - 파싱 결과는 `Story.init`에 들어가며, `parseDSL(..., { init })`로 덮어쓸 수 있음(외부 init 우선 병합).
@@ -45,34 +45,38 @@ yarn build && yarn preview
   - **그 외 한 줄** — 스크립트 스텝 (예: `if (hp <= 0) jump("gameover")`, `inc("hp", 1)`)
   - **`choices:`** 아래:
     - **`if (조건식) "레이블" -> { 스크립트 }`** — 조건이 참일 때만 선택 가능 (한 줄 `{ ... }` 권장)
-    - **`"레이블" -> { ... }`** 또는 **`"레이블" ->`** 다음 줄에 `{ ... }` — 무조건 선택 가능
 
-조건식은 JS와 비슷하게 쓰되, mathjs 규칙에 맞게 **`&&` `||` `!`는** 내부에서 `and` / `or` / `not`로 바뀝니다. **`tag == "문자열"`** 처럼 문자열 비교도 지원합니다 (`==`/`!=`는 모두 엄격 동등 의미).
+## 같은 내용을 더 짧게: `.iyagi` vs JS(Object)
 
-## DSL을 만든 이유
 이 프로젝트는 “스토리 작성”을 핵심으로 두기 때문에, 코드(JSON/JS)로 만들면 반복되는 구조(배열/필드명/중괄호)를 줄이고, 작가가 씬과 선택지를 자연스럽게 적을 수 있도록 **도메인 특화 언어(DSL)**를 만들었습니다.
 
 - JSON/JS는 `Story -> Scene -> Step/Choice` 같은 구조를 매번 전부 써야 해서, 같은 내용 대비 작성량이 커집니다.
 - `.iyagi`에서는 `vars:`, `sceneId { ... }`, `choices:` 같은 “스토리 단위” 문법을 파서가 직접 이해해, 데이터 표현이 간결해집니다.
-- 선택지 조건(`if (...)`)과 스크립트(실행 코드)를 문법 레벨에서 분리해, 조건은 `mathjs`, 실행은 `new Function` 기반 스크립트로 처리하도록 설계를 명확히 했습니다.
+- 선택지 조건(`if (...)`)과 스크립트(실행 코드)를 문법 레벨에서 분리해, `new Function` 기반 스크립트로 처리하도록 설계를 명확히 했습니다.
 
-## 같은 내용을 더 짧게: `.iyagi` vs JS(Object)
 엔진은 내부적으로 `Story` 타입 객체를 받습니다. 따라서 아래처럼 JS에서 직접 `Story`를 구성할 수도 있지만, 구조가 길어집니다.
 
-### `.iyagi`로 작성(짧고 읽기 쉬움)
+### `.iyagi`로 작성
 ```iyagi
 vars:
   hp = 10
   gold = 1
 
 village {
+  "마을은 평화롭다. 장터가 북적인다."
+  "빵집에서 고소한 냄새가 풍긴다."
   choices:
-    if (gold >= 1) "빵을 산다" -> { dec("gold", 1); inc("hp", 2); jump("going_home") }
-    "다시 길로 나온다"       -> { jump("start") }
+    if (gold >= 1) "빵을 산다" -> 
+      {
+        dec("gold", 1)
+        inc("hp", 2)
+        jump("going_home")
+      }
+    "다시 길로 나온다" -> { jump("start") }
 }
 ```
 
-### JS(Object)로 작성(구조 반복이 많음)
+### JS(Object)로 작성
 ```js
 const story = {
   title: "여행",
@@ -98,7 +102,7 @@ const story = {
 };
 ```
 
-결론적으로 `.iyagi`는 “스토리 데이터”에만 집중하게 해주고, JS/JSON에서 반복되는 구조 템플릿을 제거해서 훨씬 짧고 깔끔하게 작성할 수 있습니다.
+`.iyagi`는 “스토리 작성”에만 집중하게 해주고, JS/JSON에서 반복되는 구조 템플릿을 제거해서 훨씬 짧고 깔끔하게 작성할 수 있습니다.
 
 ## 스토리 로드
 
@@ -133,6 +137,3 @@ yarn test
 
 `src/__test__/` — 파싱, `evalWhen`, 액션, 리듀서 등.
 
-## 로드맵·할 일
-
-자세한 단계와 우선순위는 [`Todo.md`](Todo.md)를 참고하세요. (세이브/로드, HUD, 변수 선언 기반 헬퍼 자동 생성, 화면 분리 등.)
