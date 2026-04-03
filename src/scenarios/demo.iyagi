@@ -54,13 +54,29 @@ deep {
     "금화를 챙긴다" ->
       {
         inc("gold", 10)
-        jump("start")
+        jump("after_gold")
       }
     "도망친다" ->
       {
         set("hp", 5)
-        jump("start")
+        jump("after_run")
       }
+}
+
+after_gold {
+  "금화를 챙겼다."
+  "잠복 중이던 괴한에게 습격당했다."
+  subHp(2)
+  if (hp <= 0) jump("gameover")
+  choices:
+    "마을로 돌아가자" -> { jump("village") }
+}
+
+after_run {
+  "도망쳤다."
+  "길에 떨어져 있는 돈은 줍는 게 아니다."
+  choices:
+    "마을로 돌아가자" -> { jump("village") }
 }
 
 village {

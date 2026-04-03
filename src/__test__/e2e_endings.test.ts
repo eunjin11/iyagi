@@ -97,17 +97,17 @@ describe("e2e endings (engine simulation)", () => {
 
   it("scene start -> going_home 엔딩", () => {
     let s = initialEngineState(story);
-    s = chooseByText(story, s, "숲으로 들어간다"); // hp -1, jump forest
-    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2, jump deep
-    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, jump start
-    s = chooseByText(story, s, "마을로 향한다"); // jump village
-    s = chooseByText(story, s, "빵을 산다"); // gold -1, hp +2, jump going_home
+    s = chooseByText(story, s, "숲으로 들어간다"); // hp -1=9, jump forest
+    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=7, jump deep
+    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, jump after_gold
+    // after_gold 스텝: subHp(2) → hp=5
+    s = chooseByText(story, s, "마을로 돌아가자"); // jump village
+    s = chooseByText(story, s, "빵을 산다"); // gold -1=9, hp +2=7, jump going_home
 
     s = tickUntilDone(story, s);
     expectAtDoneScene(story, s, "going_home");
 
-    // going_home 진입 즉시이므로 텍스트만 진행(변수 변경 없음)
-    expect(s.vars.hp).toBe(9);
+    expect(s.vars.hp).toBe(7);
     expect(s.vars.gold).toBe(9);
   });
 
@@ -127,19 +127,22 @@ describe("e2e endings (engine simulation)", () => {
   it("scene start -> gameover 엔딩", () => {
     let s = initialEngineState(story);
 
-    // 세 번 deep로 들어가 금화를 챙긴 뒤, 마지막에 hp를 0으로 만들어 gameover로 점프한다.
-    for (let i = 0; i < 3; i++) {
-      s = chooseByText(story, s, "숲으로 들어간다"); // hp -1, jump forest
-      s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2, jump deep
-      s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, jump start
-    }
+    // 사이클 1: 숲(-1)→deep(-2)→after_gold(-2)→village→start (hp: 10→5, gold: 10)
+    s = chooseByText(story, s, "숲으로 들어간다");        // hp -1=9
+    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=7
+    s = chooseByText(story, s, "금화를 챙긴다");           // gold +10, → after_gold (subHp -2 → hp=5)
+    s = chooseByText(story, s, "마을로 돌아가자");         // → village
+    s = chooseByText(story, s, "다시 길로 나온다");        // → start
 
-    // hp: 1 -> start에서 숲 선택 시 hp 0, forest의 첫 스크립트가 gameover로 이동
-    s = chooseByText(story, s, "숲으로 들어간다");
+    // 사이클 2: 숲(-1)→deep(-2)→after_gold(-2) → hp=0 → gameover 자동 점프
+    s = chooseByText(story, s, "숲으로 들어간다");        // hp -1=4
+    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=2
+    s = chooseByText(story, s, "금화를 챙긴다");           // gold +10=20, → after_gold
+    // after_gold 스텝: subHp(2)→hp=0 → if(hp<=0) jump("gameover")
     s = tickUntilDone(story, s);
     expectAtDoneScene(story, s, "gameover");
 
     expect(s.vars.hp).toBe(0);
-    expect(s.vars.gold).toBe(30);
+    expect(s.vars.gold).toBe(20);
   });
 });
