@@ -5,8 +5,6 @@ vars:
   gold = 0
 
 start {
-  set("hp", 10)
-  set("gold", 0)
   "여행자는 하얀 길목에 서 있다."
   "바람이 불고, 두 갈래 길이 앞에 펼쳐진다."
   choices:

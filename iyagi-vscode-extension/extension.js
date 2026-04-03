@@ -79,7 +79,7 @@ function countLeadingSpaces(line) {
 }
 
 /** 씬 본문(2칸)에서 `"텍스트" ->` 패턴 — choices: 없이 선택지를 쓴 경우 */
-const MISSING_CHOICES_RE = /^  "([^"\\]|\\.)*"\s*->/;
+const MISSING_CHOICES_RE = /^ {2}"([^"\\]|\\.)*"\s*->/;
 
 function collectIndentationDiagnostics(src) {
   const lines = src.split(/\r?\n/);
