@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { DebugOverlay } from "../components/dev/DebugOverlay";
 import { ChoiceList } from "../components/story/ChoiceList";
 import { GameMenu } from "../components/story/GameMenu";
@@ -33,6 +34,25 @@ const PlayPage = ({ resumeState = null, onGoHome }: Props) => {
   const canAdvance = Boolean(currentStep);
   const interpolate = (src: string) => interpolateVars(src, vars);
 
+  // 화면 흔들림 효과: rollAttack 히트 시 vars._shakeTick 증가 → CSS 애니메이션 트리거
+  const shakeTickRef = useRef<number | null>(null);
+  const [shaking, setShaking] = useState(false);
+  useEffect(() => {
+    const tick = Number(vars._shakeTick) || 0;
+    if (shakeTickRef.current === null) {
+      // 초기 렌더 or 세이브 로드 시 — 흔들림 없이 기준값만 기록
+      shakeTickRef.current = tick;
+      return;
+    }
+    if (tick > shakeTickRef.current) {
+      shakeTickRef.current = tick;
+      setShaking(true);
+      const t = setTimeout(() => setShaking(false), 350);
+      return () => clearTimeout(t);
+    }
+    shakeTickRef.current = tick;
+  }, [vars._shakeTick]);
+
   return (
     <>
       <header className={css.header}>
@@ -46,7 +66,7 @@ const PlayPage = ({ resumeState = null, onGoHome }: Props) => {
         />
       </header>
 
-      <main className={css.content}>
+      <main className={`${css.content}${shaking ? ` ${css.shakeActive}` : ""}`}>
         <StoryPanel
           className={css.card}
           pastTexts={pastTexts}

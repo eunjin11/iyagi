@@ -180,7 +180,7 @@ s {
       expect(errors).toEqual([]);
       expect(story.title).toBe("여행");
       expect(story.start).toBe("start");
-      expect(story.init).toEqual({ hp: 10, gold: 0 });
+      expect(story.init).toEqual({ hp: 10, gold: 0, enemyHp: 10 });
       expect(story.scenes.start).toBeDefined();
       expect(story.scenes.village).toBeDefined();
       expect(story.scenes.deep?.choices).toHaveLength(2);

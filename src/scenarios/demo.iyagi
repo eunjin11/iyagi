@@ -3,6 +3,7 @@ title: "여행"
 vars:
   hp = 10
   gold = 0
+  enemyHp = 10
 
 start {
   "여행자는 하얀 길목에 서 있다."
@@ -58,9 +59,35 @@ deep {
 
 after_gold {
   "금화를 챙겼다."
-  "잠복 중이던 괴한에게 습격당했다."
-  subHp(2)
+  "잠복 중이던 괴한이 앞을 막아선다!"
+  setEnemyHp(10)
+  jump("battle")
+}
+
+battle {
   if (hp <= 0) jump("gameover")
+  if (enemyHp <= 0) jump("battle_win")
+  "괴한과 대치 중이다."
+  "내 HP: $hp | 괴한 HP: $enemyHp"
+  choices:
+    "전투하기" -> { rollAttack(0.7, 2, "enemyHp") }
+    "도망치기" -> { jump("after_run") }
+  "공격을 당했다. 내 HP가 $hp 가 되었다."
+  rollAttack(0.7, 1, "hp")
+  "괴한을 공격했다. 괴한의 HP가 $enemyHp 가 되었다."
+  jump("battle")
+}
+
+battle_round {
+  "공격을 당했다. 내 HP가 $hp 가 되었다."
+  "괴한을 공격했다. 괴한의 HP가 $enemyHp 가 되었다."
+  jump("battle")
+}
+
+battle_win {
+  "괴한을 물리쳤다!"
+  addGold(10)
+  "금화 10개를 품에 안고, 마을로 돌아간다."
   choices:
     "마을로 돌아가자" -> { jump("village") }
 }
