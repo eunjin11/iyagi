@@ -78,6 +78,9 @@ function countLeadingSpaces(line) {
   return i;
 }
 
+/** 씬 본문(2칸)에서 `"텍스트" ->` 패턴 — choices: 없이 선택지를 쓴 경우 */
+const MISSING_CHOICES_RE = /^  "([^"\\]|\\.)*"\s*->/;
+
 function collectIndentationDiagnostics(src) {
   const lines = src.split(/\r?\n/);
   /** @type {vscode.Diagnostic[]} */
@@ -105,6 +108,17 @@ function collectIndentationDiagnostics(src) {
         new vscode.Diagnostic(
           new vscode.Range(i, 0, i, 0),
           `들여쓰기는 공백 2/4/6/8 스페이스만 허용합니다. (현재: ${leading} 스페이스)`,
+          vscode.DiagnosticSeverity.Error,
+        ),
+      );
+      continue;
+    }
+
+    if (MISSING_CHOICES_RE.test(line)) {
+      diags.push(
+        new vscode.Diagnostic(
+          new vscode.Range(i, 0, i, line.length),
+          "선택지는 choices: 블록 안에 작성해야 합니다.",
           vscode.DiagnosticSeverity.Error,
         ),
       );
