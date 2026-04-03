@@ -45,7 +45,7 @@ Scripts in `.iyagi` files execute via `new Function(...)` (see `src/actions/inde
 
 ### Choice Conditions
 
-`if (expr)` conditions in choices are evaluated via **mathjs** (`src/story/evalWhen.ts`). JS operators `&&`/`||`/`!` are internally rewritten to `and`/`or`/`not`. `==`/`!=` are treated as strict equality.
+`if (expr)` conditions in choices are evaluated via `new Function` (`src/story/evalWhen.ts`). The expression is normalized before evaluation: `==`/`!=` → `===`/`!==`, and `and`/`or`/`not` → `&&`/`||`/`!`. String comparison like `tag == "value"` works as strict equality.
 
 ### Generated Files
 
