@@ -1,5 +1,10 @@
 # iyagi
 
+[데모 플레이 하기](iyagi-brown.vercel.app)
+
+https://github.com/user-attachments/assets/cda8203a-3360-485d-a67e-03824f01b89a
+
+
 `iyagi`는 모바일 우선 텍스트 게임을 위한 **스토리 DSL**과 **플레이 엔진**(React)입니다. `.iyagi` 파일을 파싱해 씬·대사·선택지·변수를 구동합니다.
 
 ## 스택
