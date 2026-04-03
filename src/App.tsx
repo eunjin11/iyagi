@@ -36,7 +36,7 @@ const App = () => {
   if (screen === "play") {
     return (
       <div className={css.appRoot}>
-        <PlayPage resumeState={playResumeState} />
+        <PlayPage resumeState={playResumeState} onGoHome={handleConfirmQuit} />
         {showQuitModal && (
           <QuitModal
             onConfirm={handleConfirmQuit}

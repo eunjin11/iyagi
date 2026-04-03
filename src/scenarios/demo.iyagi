@@ -5,6 +5,8 @@ vars:
   gold = 0
 
 start {
+  set("hp", 10)
+  set("gold", 0)
   "여행자는 하얀 길목에 서 있다."
   "바람이 불고, 두 갈래 길이 앞에 펼쳐진다."
   choices:
@@ -37,13 +39,6 @@ after_fruit {
   if (hp <= 0) jump("gameover")
   "맛있는 열매를 먹고 여행을 마치고 집으로 돌아간다."
   inc("hp", 1)
-  choices:
-    "처음으로 돌아가기" ->
-      {
-        set("hp", 10)
-        set("gold", 0)
-        jump("start")
-      }
 }
 
 deep {
@@ -107,35 +102,14 @@ going_home {
   "여행은 끝났다."
   "금화 $gold 개를 품에 안고, HP $hp 를 간직한 채 집으로 돌아온다."
   "즐거운 여행이었다."
-  choices:
-    "처음으로 돌아가기" ->
-      {
-        set("hp", 10)
-        set("gold", 0)
-        jump("start")
-      }
 }
 
 ending {
   "여행은 끝났다."
   "금화 $gold 개를 품에 안고, HP $hp 를 간직한 채 집으로 돌아온다."
   "즐거운 여행이었다."
-  choices:
-    "처음으로 돌아가기" ->
-      {
-        set("hp", 10)
-        set("gold", 0)
-        jump("start")
-      }
 }
 
 gameover {
   "여행자는 쓰러졌다. 이야기는 여기서 끝난다."
-  choices:
-    "처음부터 다시" ->
-      {
-        set("hp", 10)
-        set("gold", 0)
-        jump("start")
-      }
 }
