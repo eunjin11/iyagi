@@ -13,15 +13,11 @@ export function normalizeWhenExpr(src: string): string {
   if (!s) throw new SyntaxError("빈 조건");
 
   return s
-    .replace(/===/g, "\x00EQ\x00")    // === 보호
-    .replace(/!==/g, "\x00NEQ\x00")   // !== 보호
-    .replace(/==/g, "===")            // == → ===
-    .replace(/!=/g, "!==")            // != → !==
-    .replace(/\x00EQ\x00/g, "===")    // 복원
-    .replace(/\x00NEQ\x00/g, "!==")   // 복원
-    .replace(/\band\b/g, "&&")        // and → &&
-    .replace(/\bor\b/g, "||")         // or → ||
-    .replace(/\bnot\b/g, "!");        // not → !
+    .replace(/(?<![=!<>])==(?!=)/g, "===") // == → ===  (=== 는 그대로)
+    .replace(/(?<![=!<>])!=(?!=)/g, "!==") // != → !==  (!== 는 그대로)
+    .replace(/\band\b/g, "&&")
+    .replace(/\bor\b/g, "||")
+    .replace(/\bnot\b/g, "!");
 }
 
 export function assertWhenExprParses(expr: string): void {
@@ -34,7 +30,9 @@ export function evalWhen(expr: string, vars: VariableBag): boolean {
     const js = normalizeWhenExpr(expr);
     const keys = Object.keys(vars);
     const values = Object.values(vars);
-    return Boolean(new Function("seq", ...keys, `return (${js})`)(seq, ...values));
+    return Boolean(
+      new Function("seq", ...keys, `return (${js})`)(seq, ...values),
+    );
   } catch {
     return false;
   }

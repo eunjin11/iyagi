@@ -71,7 +71,13 @@ const PlayPage = ({ resumeState = null, onGoHome }: Props) => {
           <section className={css.card} aria-label="ending">
             <div style={{ opacity: 0.6, textAlign: "center" }}>— END —</div>
             {onGoHome && (
-              <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "1rem",
+                }}
+              >
                 <button
                   type="button"
                   className={css.actionButton}

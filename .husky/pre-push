@@ -1,0 +1,4 @@
+yarn check
+yarn test
+yarn test:e2e
+yarn build

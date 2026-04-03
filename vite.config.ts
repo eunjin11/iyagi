@@ -9,10 +9,12 @@ function iyagiPlugin() {
     transform(code: string, id: string) {
       if (!id.endsWith(".iyagi")) return;
       const filename =
-        id.split("/").pop()?.replace(/\.iyagi$/i, "") ?? "Story";
+        id
+          .split("/")
+          .pop()
+          ?.replace(/\.iyagi$/i, "") ?? "Story";
       const title =
-        filename.charAt(0).toUpperCase() +
-        filename.slice(1).replace(/_/g, " ");
+        filename.charAt(0).toUpperCase() + filename.slice(1).replace(/_/g, " ");
       const { story, errors } = parseDSL(code, { title });
       if (errors.length > 0) {
         console.warn(`[iyagi] parse errors in ${id}:`, errors);

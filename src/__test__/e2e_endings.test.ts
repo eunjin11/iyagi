@@ -128,16 +128,16 @@ describe("e2e endings (engine simulation)", () => {
     let s = initialEngineState(story);
 
     // 사이클 1: 숲(-1)→deep(-2)→after_gold(-2)→village→start (hp: 10→5, gold: 10)
-    s = chooseByText(story, s, "숲으로 들어간다");        // hp -1=9
+    s = chooseByText(story, s, "숲으로 들어간다"); // hp -1=9
     s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=7
-    s = chooseByText(story, s, "금화를 챙긴다");           // gold +10, → after_gold (subHp -2 → hp=5)
-    s = chooseByText(story, s, "마을로 돌아가자");         // → village
-    s = chooseByText(story, s, "다시 길로 나온다");        // → start
+    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, → after_gold (subHp -2 → hp=5)
+    s = chooseByText(story, s, "마을로 돌아가자"); // → village
+    s = chooseByText(story, s, "다시 길로 나온다"); // → start
 
     // 사이클 2: 숲(-1)→deep(-2)→after_gold(-2) → hp=0 → gameover 자동 점프
-    s = chooseByText(story, s, "숲으로 들어간다");        // hp -1=4
+    s = chooseByText(story, s, "숲으로 들어간다"); // hp -1=4
     s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=2
-    s = chooseByText(story, s, "금화를 챙긴다");           // gold +10=20, → after_gold
+    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10=20, → after_gold
     // after_gold 스텝: subHp(2)→hp=0 → if(hp<=0) jump("gameover")
     s = tickUntilDone(story, s);
     expectAtDoneScene(story, s, "gameover");
