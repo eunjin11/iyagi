@@ -80,6 +80,7 @@ globalStyle("body", {
 
 globalStyle("button", {
   fontFamily: vars.font.body,
+  WebkitTapHighlightColor: "transparent",
 });
 
 // Accessible focus

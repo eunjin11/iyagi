@@ -42,6 +42,7 @@ export const card = style({
   fontSize: "15px",
   height: "65vh",
   overflowY: "auto",
+  WebkitTapHighlightColor: "transparent",
 });
 
 export const actionRow = style({
@@ -59,7 +60,7 @@ export const choiceSlot = style({
   zIndex: 1,
   width: "100%",
   maxWidth: vars.size.maxContent,
-  marginTop: `calc(-1 * ${vars.space.lg})`,
+  marginTop: `calc(-2 * ${vars.space.lg})`,
   boxSizing: "border-box",
   display: "flex",
   flexDirection: "column",

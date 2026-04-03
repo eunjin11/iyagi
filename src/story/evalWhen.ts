@@ -1,83 +1,40 @@
-import type { MathNode } from "mathjs";
-import {
-  FunctionNode,
-  isOperatorNode,
-  OperatorNode,
-  parse,
-  SymbolNode,
-} from "mathjs";
 import type { VariableBag } from "./types";
 
+/** seq(a, b): 엄격 동등 비교 — 조건식에서 명시적으로 호출 가능 */
+const seq = (a: unknown, b: unknown): boolean => a === b;
+
 /**
- * 스토리 조건식은 JS와 비슷하게 쓰고, mathjs 문법으로만 짧게 바꾼다 (`&&`→`and` 등).
- *
- * `==` / `!=` 는 평가 전에 AST에서 `seq` / `not(seq)` 로 바꿔, 문자열·숫자·불리언 모두
- * **엄격 동등(`===` / `!==`)** 으로 맞춘다 (mathjs 기본 `equal` 은 문자열에 부적합).
+ * DSL 조건식 → 유효한 JS 표현식으로 변환
+ * - `==` / `!=`  →  `===` / `!==`  (이미 `===`/`!==`인 경우도 유지)
+ * - `and` / `or` / `not`  →  `&&` / `||` / `!`
  */
-const WHEN_SCOPE = {
-  seq: (a: unknown, b: unknown) => a === b,
-} as const;
-
-const SEQ_SYM = new SymbolNode("seq");
-
-function rewriteEqualityToStrictSeq(node: MathNode): MathNode {
-  return node.transform((n) => {
-    if (isOperatorNode(n) && n.op === "==") {
-      return new FunctionNode(SEQ_SYM, [...n.args]);
-    }
-    if (isOperatorNode(n) && n.op === "!=") {
-      const inner = new FunctionNode(SEQ_SYM, [...n.args]);
-      return new OperatorNode("not", "not", [inner]);
-    }
-    return n;
-  });
-}
-
 export function normalizeWhenExpr(src: string): string {
   const s = src.trim();
   if (!s) throw new SyntaxError("빈 조건");
-  const t = s.replace(/===/g, "==").replace(/!==/g, "!=");
-  let out = "";
-  for (let i = 0; i < t.length; i++) {
-    const c = t[i];
-    if (c === "&" && t[i + 1] === "&") {
-      out += " and ";
-      i++;
-      continue;
-    }
-    if (c === "|" && t[i + 1] === "|") {
-      out += " or ";
-      i++;
-      continue;
-    }
-    if (c === "!" && t[i + 1] === "=") {
-      out += "!=";
-      i++;
-      continue;
-    }
-    if (c === "!") {
-      out += "not ";
-      continue;
-    }
-    out += c;
-  }
-  return out;
-}
 
-function parseWhenTree(expr: string): MathNode {
-  const tree = parse(normalizeWhenExpr(expr));
-  return rewriteEqualityToStrictSeq(tree);
+  return s
+    .replace(/===/g, "\x00EQ\x00")    // === 보호
+    .replace(/!==/g, "\x00NEQ\x00")   // !== 보호
+    .replace(/==/g, "===")            // == → ===
+    .replace(/!=/g, "!==")            // != → !==
+    .replace(/\x00EQ\x00/g, "===")    // 복원
+    .replace(/\x00NEQ\x00/g, "!==")   // 복원
+    .replace(/\band\b/g, "&&")        // and → &&
+    .replace(/\bor\b/g, "||")         // or → ||
+    .replace(/\bnot\b/g, "!");        // not → !
 }
 
 export function assertWhenExprParses(expr: string): void {
-  parseWhenTree(expr);
+  const js = normalizeWhenExpr(expr);
+  new Function("seq", `return (${js})`);
 }
 
 export function evalWhen(expr: string, vars: VariableBag): boolean {
   try {
-    const tree = parseWhenTree(expr);
-    const scope = { ...vars, ...WHEN_SCOPE };
-    return Boolean(tree.evaluate(scope));
+    const js = normalizeWhenExpr(expr);
+    const keys = Object.keys(vars);
+    const values = Object.values(vars);
+    return Boolean(new Function("seq", ...keys, `return (${js})`)(seq, ...values));
   } catch {
     return false;
   }
