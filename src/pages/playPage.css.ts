@@ -27,11 +27,11 @@ export const content = style({
   alignItems: "center",
   width: "100%",
   minHeight: 0,
-  alignSelf: "stretch",
+  overflow: "hidden",
   gap: vars.space.md,
   boxSizing: "border-box",
-  // 하단 고정 ‘스토리 로그’ 줄 높이 — 선택지 유무와 관계없이 동일 여백
-  paddingBottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
+  // 하단 고정 ‘스토리 로그’ 줄 높이 + 추가 여백
+  paddingBottom: "calc(48px + 60px + env(safe-area-inset-bottom, 0px))",
 });
 
 export const card = style({
@@ -40,7 +40,8 @@ export const card = style({
   background: vars.color.panel,
   padding: vars.space.xl,
   fontSize: "15px",
-  height: "65vh",
+  flex: 1,
+  minHeight: 0,
   overflowY: "auto",
   WebkitTapHighlightColor: "transparent",
 });
