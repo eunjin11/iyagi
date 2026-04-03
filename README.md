@@ -1,6 +1,6 @@
 # iyagi
 
-[데모 플레이 하기](iyagi-brown.vercel.app)
+[데모 플레이 하기](https://iyagi-brown.vercel.app/)
 
 https://github.com/user-attachments/assets/cda8203a-3360-485d-a67e-03824f01b89a
 
