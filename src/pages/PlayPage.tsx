@@ -11,9 +11,10 @@ import * as css from "./playPage.css.ts";
 
 type Props = {
   resumeState?: StoryEngineState | null;
+  onGoHome?: () => void;
 };
 
-const PlayPage = ({ resumeState = null }: Props) => {
+const PlayPage = ({ resumeState = null, onGoHome }: Props) => {
   const { play, saves } = useStoryEngine(currentStory, resumeState);
   const {
     story,
@@ -69,6 +70,17 @@ const PlayPage = ({ resumeState = null }: Props) => {
         {isDone && choices.length === 0 && (
           <section className={css.card} aria-label="ending">
             <div style={{ opacity: 0.6, textAlign: "center" }}>— END —</div>
+            {onGoHome && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+                <button
+                  type="button"
+                  className={css.actionButton}
+                  onClick={onGoHome}
+                >
+                  메인화면으로 돌아가기
+                </button>
+              </div>
+            )}
           </section>
         )}
 
