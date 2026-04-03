@@ -23,17 +23,6 @@ yarn test     # Vitest
 yarn build && yarn preview
 ```
 
-## 저장 시 `.iyagi` 자동 포맷 (Format on Save)
-이 레포는 VSCode 확장(`iyagi-lang`)이 `.iyagi`용 포맷터를 포함하고 있어, 별도 Run-on-Save 확장 없이도 저장(`Ctrl+S`) 시 자동 포맷이 가능합니다.
-
-1. 확장 설치(로컬)
-   - `iyagi-vscode-extension`을 VSCode/Cursor에서 “Run Extension”으로 실행하거나, VSIX로 설치합니다.
-2. 프로젝트 전용 설정
-   - `.vscode/settings.json`에 `[iyagi]` 전용 `editor.defaultFormatter` / `editor.formatOnSave`가 포함되어 있습니다.
-3. 검증
-   - `src/scenarios/demo.iyagi`를 열고 저장(`Ctrl+S`)해보세요.
-   - `{}` 블록/선택지 들여쓰기와 줄바꿈이 자동으로 정렬됩니다.
-
 ## 스토리 파일 (`.iyagi`)
 
 공개 진입점은 **`parseDSL`** — 예시는 [`src/scenarios/demo.iyagi`](src/scenarios/demo.iyagi) 참고
@@ -108,6 +97,20 @@ const story = {
 ```
 
 `.iyagi`는 “스토리 작성”에만 집중하게 해주고, JS/JSON에서 반복되는 구조 템플릿을 제거해서 훨씬 짧고 깔끔하게 작성할 수 있습니다.
+
+## 저장 시 `.iyagi` 자동 포맷 (Format on Save)
+
+https://github.com/user-attachments/assets/66e64c2d-16d7-428f-a3dc-af8959152ac4
+
+이 레포는 VSCode 확장(`iyagi-lang`)이 `.iyagi`용 포맷터를 포함하고 있어, 별도 Run-on-Save 확장 없이도 저장(`Ctrl+S`) 시 자동 포맷이 가능합니다.
+
+1. 확장 설치(로컬)
+   - `iyagi-vscode-extension`을 VSCode/Cursor에서 “Run Extension”으로 실행하거나, VSIX로 설치합니다.
+2. 프로젝트 전용 설정
+   - `.vscode/settings.json`에 `[iyagi]` 전용 `editor.defaultFormatter` / `editor.formatOnSave`가 포함되어 있습니다.
+3. 검증
+   - `src/scenarios/demo.iyagi`를 열고 저장(`Ctrl+S`)해보세요.
+   - `{}` 블록/선택지 들여쓰기와 줄바꿈이 자동으로 정렬됩니다.
 
 ## 스토리 로드
 
