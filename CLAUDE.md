@@ -57,29 +57,73 @@ Scripts in `.iyagi` files execute via `new Function(...)` (see `src/actions/inde
 
 ### Grammar: delimiter-based, not indentation-based
 
-초기 구현은 `IND2`/`IND4`/`IND6`/`IND8` 고정 터미널로 들여쓰기 수를 하드코딩했다. Langium은 `IndentationAwareTokenBuilder`(INDENT/DEDENT 토큰)도 제공하지만, 이 DSL은 이미 씬 바디와 액션 블록에 `{}`를 사용하고 있어 INDENT/DEDENT와 섞으면 구조가 복잡해진다. 대신 `choices: { }` 명시적 구분자를 도입해 파서가 들여쓰기 없이도 구조를 결정할 수 있게 했다. 결과적으로 `IND*` 터미널과 `indentationDiagnostics.ts` 수동 검증이 모두 제거됐다.
+The initial implementation hard-coded indentation levels using fixed terminals `IND2`/`IND4`/`IND6`/`IND8`. Langium also provides `IndentationAwareTokenBuilder` (INDENT/DEDENT tokens), but since this DSL already uses `{}` for scene bodies and action blocks, mixing INDENT/DEDENT with braces adds unnecessary complexity. Instead, explicit `choices: { }` delimiters were introduced so the parser can determine structure without indentation. This eliminated all `IND*` terminals and the manual `indentationDiagnostics.ts` validation.
 
-**`vars:`는 `{}`를 쓰지 않는 이유:** `VarLine`은 `ID '=' value NL` 패턴으로 씬 선언(`ID '{'`)과 완전히 구별된다. `{}`가 없어도 파싱이 명확하고, YAML/TOML 스타일의 단순 key-value 선언에는 `{}`가 오히려 노이즈다.
+**Why `vars:` does not use `{}`:** `VarLine` matches `ID '=' value NL`, which is fully distinct from a scene declaration (`ID '{'`). Parsing is unambiguous without braces, and `{}` would be noise for a simple key-value config block (YAML/TOML style).
 
-### ScriptHead vs ScriptToken 구분
+### ScriptHead vs ScriptToken
 
-`TextLine`(`"..."`)과 `ScriptLine`(스크립트)을 구별하기 위해 `ScriptHead`는 STRING을 제외한다. `ScriptLine`의 첫 토큰이 STRING이면 `TextLine`으로 파싱된다. 두 번째 토큰 이후(`tailTokens`)는 `ScriptToken`을 사용해 STRING도 허용한다. `ActionScriptLine`도 동일한 전략으로 `ActionTextLine`과 구별된다.
+To distinguish `TextLine` (`"..."`) from `ScriptLine` (script), `ScriptHead` excludes STRING. If the first token of a line is a STRING, it is parsed as a `TextLine`. Tokens after the first (`tailTokens`) use `ScriptToken`, which does allow STRING. `ActionScriptLine` uses the same strategy to stay unambiguous from `ActionTextLine`.
 
-### choicesAt — post-step 인코딩
+### choicesAt — post-step encoding
 
-씬에 `choices:` 뒤에 스텝이 있을 때(`Option B 패턴`), `Scene.choicesAt` 필드로 "선택지가 표시되는 stepIndex 슬롯"을 기록한다.
+When a scene has steps after its `choices:` block (Option B pattern), `Scene.choicesAt` records the stepIndex slot where choices are displayed.
 
-- `stepIndex < choicesAt` → 선택 전 스텝 (`steps[stepIndex]`)
-- `stepIndex === choicesAt` → 선택지 표시 (`isDone = true`)
-- `stepIndex > choicesAt` → 선택 후 스텝 (`steps[stepIndex - 1]`)
+- `stepIndex < choicesAt` → pre-choice step (`steps[stepIndex]`)
+- `stepIndex === choicesAt` → show choices (`isDone = true`)
+- `stepIndex > choicesAt` → post-choice step (`steps[stepIndex - 1]`)
 
-`storyReducer`와 `engineDerived`에 `resolveStep(scene, stepIndex)` 헬퍼로 통일. 단, 순환 의존성 방지를 위해 `storyReducer` 내부에 같은 로직을 로컬로 복사했다.
+A `resolveStep(scene, stepIndex)` helper in `engineDerived.ts` unifies this logic. The same logic is duplicated locally inside `storyReducer.ts` to avoid a circular import.
 
-### 무명 씬 (`__anon_N`)
+### Anonymous scenes (`__anon_N`)
 
-선택지 액션 블록 `{ }` 안에 텍스트 라인이 있으면, 파서(`astToStory.ts`)가 컴파일 타임에 `__anon_0`, `__anon_1`, ... ID의 씬으로 분리하고 `choice.script`를 `jump("__anon_0")`으로 교체한다. 엔진은 일반 씬과 동일하게 처리하므로 런타임 변경이 없다. 텍스트가 없는 순수 스크립트 블록은 무명 씬을 만들지 않고 스크립트 문자열을 그대로 반환한다.
+**Trigger:** If a choice action block `{ }` contains at least one text line, an anonymous scene is generated. A block with only script lines returns a plain script string with no scene created.
 
-### DSL Syntax Reference
+**Handled at parse time** by `astToStory.ts`. The engine (`storyReducer`) has no knowledge of this.
+
+```
+// .iyagi
+"Attack" ->
+  {
+    set("x", 1)
+    "You attacked!"   ← text line present → generate anonymous scene
+    jump("next")
+  }
+
+// Parse result
+choice  = { text: "Attack", script: 'jump("__anon_0")' }
+scenes["__anon_0"] = {
+  steps: [
+    { type: "script", code: 'set("x", 1)' },
+    { type: "text",   content: "You attacked!" },
+    { type: "script", code: 'jump("next")' },
+  ],
+  choices: []
+}
+
+// Block with no text — no anonymous scene
+"Flee" -> { set("x", 0)  jump("out") }
+choice  = { text: "Flee", script: 'set("x", 0)\njump("out")' }
+```
+
+**Runtime flow:**
+```
+CHOOSE "Attack"
+  → execute choice.script: jump("__anon_0")
+  → sceneId = "__anon_0", stepIndex = 0
+  → script set("x",1)      auto-executed
+  → text   "You attacked!"  waits for TAP_ADVANCE
+  → script jump("next")    auto-executed
+  → sceneId = "next"
+```
+
+**Multiple choices:** `anonCounter` increments monotonically across the entire file (`__anon_0`, `__anon_1`, ...), so IDs never collide.
+
+**Key point:** The engine treats `__anon_0` exactly like any regular scene. All the complex branching logic is resolved at parse time.
+
+---
+
+## DSL Syntax Reference
 
 ```iyagi
 vars:
