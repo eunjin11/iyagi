@@ -72,8 +72,7 @@ function expectAtDoneScene(
 ) {
   expect(s.sceneId).toBe(sceneId);
   // "done" = empty queue or waiting at a choices step
-  const done =
-    s.stepQueue.length === 0 || s.stepQueue[0]?.type === "choices";
+  const done = s.stepQueue.length === 0 || s.stepQueue[0]?.type === "choices";
   expect(done).toBe(true);
 }
 
@@ -86,7 +85,7 @@ function battleState(
 ): StoryEngineState {
   return {
     sceneId: "battle",
-    stepQueue: [...(story.scenes["battle"]?.steps ?? [])],
+    stepQueue: [...(story.scenes.battle?.steps ?? [])],
     pastTexts: [],
     vars: { ...story.init, hp, enemyHp, gold },
     storyLog: [{ kind: "enterScene", sceneId: "battle" }],
@@ -117,8 +116,8 @@ describe("battle system", () => {
   it("플레이어 항상 미스·적 항상 히트: 10라운드 후 gameover", () => {
     let callCount = 0;
     // rollAttack 호출 순서: 플레이어(miss) → 적(hit) → 반복
-    vi.spyOn(Math, "random").mockImplementation(
-      () => (callCount++ % 2 === 0 ? 0.8 : 0.0),
+    vi.spyOn(Math, "random").mockImplementation(() =>
+      callCount++ % 2 === 0 ? 0.8 : 0.0,
     );
 
     let s = battleState(story, 10, 10);

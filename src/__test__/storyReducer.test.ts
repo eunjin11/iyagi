@@ -99,11 +99,15 @@ describe("storyReducer", () => {
       },
     };
     let s = initialEngineState(story);
-    const choice = story.scenes.a!.steps[0] as Extract<
+    const choice = story.scenes.a?.steps[0] as Extract<
       (typeof story.scenes.a.steps)[0],
       { type: "choices" }
     >;
-    s = applyStoryEvent(s, { type: "CHOOSE", choice: choice.choices[0]! }, story);
+    s = applyStoryEvent(
+      s,
+      { type: "CHOOSE", choice: choice.choices[0] },
+      story,
+    );
     // choices 스텝이 choice.steps로 교체되고 "after" 스텝은 유지
     expect(s.stepQueue[0]).toEqual({ type: "text", content: "중간" });
     expect(s.stepQueue[1]).toEqual({ type: "script", code: 'jump("b")' });

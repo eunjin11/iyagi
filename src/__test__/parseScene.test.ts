@@ -4,10 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseDSL } from "../parser/parseScene";
 import { evalWhen } from "../story/evalWhen";
-import {
-  applyStoryEvent,
-  initialEngineState,
-} from "../story/storyReducer";
+import { applyStoryEvent, initialEngineState } from "../story/storyReducer";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +13,9 @@ function demoStorySource(): string {
 }
 
 /** scene.steps에서 choices 스텝을 찾아 반환 */
-function findChoicesStep(steps: ReturnType<typeof parseDSL>["story"]["scenes"][string]["steps"]) {
+function findChoicesStep(
+  steps: ReturnType<typeof parseDSL>["story"]["scenes"][string]["steps"],
+) {
   return steps.find((s) => s.type === "choices") as
     | Extract<(typeof steps)[number], { type: "choices" }>
     | undefined;
@@ -177,8 +176,14 @@ s {
       expect(errors).toEqual([]);
       const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
       const steps = choicesStep?.choices[0]?.steps ?? [];
-      expect(steps.some((s) => s.type === "script" && s.code.includes('inc("gold", 1)'))).toBe(true);
-      expect(steps.some((s) => s.type === "script" && s.code.includes('jump("b")'))).toBe(true);
+      expect(
+        steps.some(
+          (s) => s.type === "script" && s.code.includes('inc("gold", 1)'),
+        ),
+      ).toBe(true);
+      expect(
+        steps.some((s) => s.type === "script" && s.code.includes('jump("b")')),
+      ).toBe(true);
     });
 
     it("조건부 선택은 if 한 줄만", () => {
@@ -215,7 +220,11 @@ s {
       const deepChoicesStep = findChoicesStep(story.scenes.deep?.steps ?? []);
       expect(deepChoicesStep?.choices).toHaveLength(2);
       const run = deepChoicesStep?.choices.find((c) => c.text === "도망친다");
-      expect(run?.steps.some((s) => s.type === "script" && s.code.includes('set("hp", 5)'))).toBe(true);
+      expect(
+        run?.steps.some(
+          (s) => s.type === "script" && s.code.includes('set("hp", 5)'),
+        ),
+      ).toBe(true);
     });
 
     it("after_fruit: 진입 스크립트 → 대사 → 대사 이후 inc 스크립트 순 스텝", () => {
@@ -251,19 +260,30 @@ s {
       const bread = choicesStep?.choices.find((c) => c.text === "빵을 산다");
       expect(bread?.enabledWhen).toBe("gold >= 1");
       if (!bread) throw new Error('choice "빵을 산다" not found');
-      if (!bread.enabledWhen) throw new Error('choice "빵을 산다" has no enabledWhen');
-      expect(bread.steps.some((s) => s.type === "script" && s.code.includes('jump("going_home")'))).toBe(true);
+      if (!bread.enabledWhen)
+        throw new Error('choice "빵을 산다" has no enabledWhen');
+      expect(
+        bread.steps.some(
+          (s) => s.type === "script" && s.code.includes('jump("going_home")'),
+        ),
+      ).toBe(true);
 
       const varsPoor = { hp: 10, gold: 0 };
       const varsRich = { hp: 10, gold: 1 };
       expect(evalWhen(bread.enabledWhen, varsPoor)).toBe(false);
       expect(evalWhen(bread.enabledWhen, varsRich)).toBe(true);
 
-      const heal = choicesStep?.choices.find((c) => c.text === "치유사에게 간다");
+      const heal = choicesStep?.choices.find(
+        (c) => c.text === "치유사에게 간다",
+      );
       expect(heal?.enabledWhen).toBeUndefined();
 
-      const road = choicesStep?.choices.find((c) => c.text === "다시 길로 나온다");
-      const end = choicesStep?.choices.find((c) => c.text === "여행을 마치고 집으로 돌아간다");
+      const road = choicesStep?.choices.find(
+        (c) => c.text === "다시 길로 나온다",
+      );
+      const end = choicesStep?.choices.find(
+        (c) => c.text === "여행을 마치고 집으로 돌아간다",
+      );
       expect(road?.enabledWhen).toBeUndefined();
       expect(end?.enabledWhen).toBeUndefined();
     });
@@ -293,7 +313,9 @@ s {
         { type: "script", code: 'jump("next")' },
       ]);
       // 무명 씬 없음
-      expect(Object.keys(story.scenes).every((k) => !k.startsWith("__anon_"))).toBe(true);
+      expect(
+        Object.keys(story.scenes).every((k) => !k.startsWith("__anon_")),
+      ).toBe(true);
     });
 
     it("텍스트 없는 블록도 정상 파싱", () => {
@@ -363,9 +385,12 @@ t { "끝" }
       // "시작" 텍스트 → TAP_ADVANCE
       state = applyStoryEvent(state, { type: "TAP_ADVANCE" }, story);
       // choices 스텝 → CHOOSE
-      const choicesStep = state.stepQueue[0] as Extract<typeof state.stepQueue[0], { type: "choices" }>;
+      const choicesStep = state.stepQueue[0] as Extract<
+        (typeof state.stepQueue)[0],
+        { type: "choices" }
+      >;
       expect(choicesStep.type).toBe("choices");
-      const choice = choicesStep.choices[0]!;
+      const choice = choicesStep.choices[0];
       state = applyStoryEvent(state, { type: "CHOOSE", choice }, story);
 
       // choice.steps 주입: "중간" 텍스트

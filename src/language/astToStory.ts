@@ -40,15 +40,6 @@ function unquoteStringLiteral(raw: string): string {
   return raw;
 }
 
-function cstLineText(
-  node: { $cstNode?: { text: string } } | undefined,
-  indent: number,
-): string {
-  const text = node?.$cstNode?.text ?? "";
-  const withoutNl = text.replace(/\r?\n$/, "");
-  return withoutNl.slice(indent).trimEnd();
-}
-
 function cstLineTextAuto(
   node: { $cstNode?: { text: string } } | undefined,
 ): string {
