@@ -39,6 +39,10 @@ function tickUntilDone(story: Story, s0: StoryEngineState): StoryEngineState {
       s = applyStoryEvent(s, { type: "RUN_SCRIPT", code: step.code }, story);
       continue;
     }
+    if (step.type === "conditional") {
+      s = applyStoryEvent(s, { type: "EVAL_CONDITIONAL" }, story);
+      continue;
+    }
     return s;
   }
   throw new Error("tickUntilDone: maxTicks exceeded (possible infinite loop)");

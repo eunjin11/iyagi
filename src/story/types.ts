@@ -12,7 +12,8 @@ export type VarDef = {
 export type Step =
   | { type: "text"; content: string }
   | { type: "script"; code: string }
-  | { type: "choices"; choices: Choice[] };
+  | { type: "choices"; choices: Choice[] }
+  | { type: "conditional"; cond: string; thenSteps: Step[]; elseSteps: Step[] };
 
 // ---------------------------------------------------------------------------
 // Choice

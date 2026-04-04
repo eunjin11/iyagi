@@ -73,15 +73,20 @@ battle {
   "괴한과 대치 중이다."
   "내 HP: $hp | 괴한 HP: $enemyHp"
   choices: {
-    "전투하기" ->
-    {
-      rollAttack(0.7, 2, "enemyHp")
-      "괴한을 공격했다. 괴한의 HP가 $enemyHp 가 되었다."
-    }
+    "전투하기" -> { const hit = rollAttack(0.7, 2, "enemyHp") }
     "도망치기" -> { jump("after_run") }
   }
-  rollAttack(0.7, 1, "hp")
-  "공격을 당했다. 내 HP가 $hp 가 되었다."
+  if (hit) {
+    "공격에 성공했다!"
+  } else {
+    "공격에 실패했다!"
+  }
+  hit = rollAttack(0.7, 1, "hp")
+  if (hit) {
+    "괴한의 공격이 명중했다!"
+  } else {
+    "괴한의 공격을 피했다!"
+  }
   jump("battle")
 }
 

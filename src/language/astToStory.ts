@@ -8,6 +8,7 @@ import type {
   VariableBag,
 } from "../story/types";
 import type {
+  ActionLine,
   ChoiceAction,
   ChoiceLine,
   Document as IyagiDocumentAst,
@@ -18,6 +19,7 @@ import {
   isActionTextLine,
   isBlockAction,
   isChoiceBlock,
+  isIfBlock,
   isIfChoice,
   isInlineAction,
   isInlineScene,
@@ -71,6 +73,22 @@ function parseVarValue(raw: string): number | string | boolean | undefined {
   return raw.startsWith('"') && raw.endsWith('"')
     ? unquoteStringLiteral(raw)
     : raw;
+}
+
+/** ActionLine 배열 → Step[] (IfBlock 내부에서도 재사용) */
+function stepsFromActionLines(lines: ActionLine[]): Step[] {
+  const steps: Step[] = [];
+  for (const line of lines) {
+    if (isActionTextLine(line)) {
+      for (const t of line.texts) {
+        steps.push({ type: "text", content: unquoteStringLiteral(t) });
+      }
+    } else {
+      const code = cstLineTextAuto(line);
+      if (code) steps.push({ type: "script", code });
+    }
+  }
+  return steps;
 }
 
 /** choice action block → Step[] */
@@ -152,6 +170,16 @@ function sceneFromAst(scene: IyagiSceneAst, errors: string[]): Scene {
         choiceFromLine(c, errors, scene.name),
       );
       steps.push({ type: "choices", choices });
+      continue;
+    }
+    if (isIfBlock(item)) {
+      const cond = (item.cond.$cstNode?.text ?? "").trim();
+      steps.push({
+        type: "conditional",
+        cond,
+        thenSteps: stepsFromActionLines(item.thenItems),
+        elseSteps: stepsFromActionLines(item.elseItems ?? []),
+      });
     }
   }
 

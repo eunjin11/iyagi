@@ -62,8 +62,18 @@ InlineScene:
 
 SceneItem:
     ChoiceBlock
+  | IfBlock
   | TextLine
   | ScriptLine;
+
+IfBlock:
+  'if' '(' cond=WhenExpr ')' '{' NL
+  thenItems+=ActionLine*
+  '}'
+  ('else' '{' NL
+  elseItems+=ActionLine*
+  '}')?
+  NL?;
 
 IgnoredLine returns string:
     NL

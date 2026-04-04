@@ -29,6 +29,7 @@ export type iyagiKeywordNames =
     | "."
     | "="
     | "choices:"
+    | "else"
     | "false"
     | "if"
     | "title:"
@@ -50,7 +51,7 @@ export function isActionLine(item: unknown): item is ActionLine {
 }
 
 export interface ActionScriptLine extends langium.AstNode {
-    readonly $container: BlockAction;
+    readonly $container: BlockAction | IfBlock;
     readonly $type: 'ActionScriptLine';
     head: ScriptHead;
     tailTokens: Array<ScriptToken>;
@@ -67,7 +68,7 @@ export function isActionScriptLine(item: unknown): item is ActionScriptLine {
 }
 
 export interface ActionTextLine extends langium.AstNode {
-    readonly $container: BlockAction;
+    readonly $container: BlockAction | IfBlock;
     readonly $type: 'ActionTextLine';
     texts: Array<string>;
 }
@@ -145,6 +146,25 @@ export const Document = {
 
 export function isDocument(item: unknown): item is Document {
     return reflection.isInstance(item, Document.$type);
+}
+
+export interface IfBlock extends langium.AstNode {
+    readonly $container: MultiLineScene;
+    readonly $type: 'IfBlock';
+    cond: WhenExpr;
+    elseItems: Array<ActionLine>;
+    thenItems: Array<ActionLine>;
+}
+
+export const IfBlock = {
+    $type: 'IfBlock',
+    cond: 'cond',
+    elseItems: 'elseItems',
+    thenItems: 'thenItems'
+} as const;
+
+export function isIfBlock(item: unknown): item is IfBlock {
+    return reflection.isInstance(item, IfBlock.$type);
 }
 
 export interface IfChoice extends langium.AstNode {
@@ -254,7 +274,7 @@ export function isScene(item: unknown): item is Scene {
     return reflection.isInstance(item, Scene.$type);
 }
 
-export type SceneItem = ChoiceBlock | ScriptLine | TextLine;
+export type SceneItem = ChoiceBlock | IfBlock | ScriptLine | TextLine;
 
 export const SceneItem = {
     $type: 'SceneItem'
@@ -348,7 +368,7 @@ export function isVarValue(item: unknown): item is VarValue {
 }
 
 export interface WhenExpr extends langium.AstNode {
-    readonly $container: IfChoice;
+    readonly $container: IfBlock | IfChoice;
     readonly $type: 'WhenExpr';
     condTokens: Array<WhenToken>;
 }
@@ -377,6 +397,7 @@ export type iyagiAstType = {
     ChoiceBlock: ChoiceBlock
     ChoiceLine: ChoiceLine
     Document: Document
+    IfBlock: IfBlock
     IfChoice: IfChoice
     InlineAction: InlineAction
     InlineScene: InlineScene
@@ -466,6 +487,23 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
                 }
             },
             superTypes: []
+        },
+        IfBlock: {
+            name: IfBlock.$type,
+            properties: {
+                cond: {
+                    name: IfBlock.cond
+                },
+                elseItems: {
+                    name: IfBlock.elseItems,
+                    defaultValue: []
+                },
+                thenItems: {
+                    name: IfBlock.thenItems,
+                    defaultValue: []
+                }
+            },
+            superTypes: [SceneItem.$type]
         },
         IfChoice: {
             name: IfChoice.$type,

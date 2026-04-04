@@ -525,6 +525,58 @@ function formatFile(src) {
       continue;
     }
 
+    // --- IfBlock: if (cond) { ... } [else { ... }] ---
+    const ifBlockMulti = /^if\s*\((.+)\)\s*\{\s*$/.exec(trimmed);
+    if (ifBlockMulti) {
+      const cond = ifBlockMulti[1].trim();
+      const thenLines = [];
+      let j = i + 1;
+
+      // then-body 수집: `}` 또는 `} else {` 까지
+      while (j < lines.length) {
+        const t = lines[j].trim();
+        if (t === "}" || /^\}\s*else\s*\{/.test(t)) break;
+        if (t !== "") thenLines.push(t);
+        j++;
+      }
+
+      const elseLines = [];
+      let hasElse = false;
+
+      if (j < lines.length) {
+        const closeTrim = lines[j].trim();
+        if (/^\}\s*else\s*\{/.test(closeTrim)) {
+          hasElse = true;
+          j++;
+          // else-body 수집
+          while (j < lines.length) {
+            const t = lines[j].trim();
+            if (t === "}") break;
+            if (t !== "") elseLines.push(t);
+            j++;
+          }
+          j++; // closing `}` of else
+        } else if (closeTrim === "}") {
+          j++; // closing `}` of if
+        }
+      }
+
+      out.push(`${INDENT_SCENE}if (${cond}) {`);
+      for (const line of thenLines) {
+        out.push(`${INDENT_CHOICES}${line}`);
+      }
+      if (hasElse) {
+        out.push(`${INDENT_SCENE}} else {`);
+        for (const line of elseLines) {
+          out.push(`${INDENT_CHOICES}${line}`);
+        }
+      }
+      out.push(`${INDENT_SCENE}}`);
+
+      i = j;
+      continue;
+    }
+
     // script lines: keep trimmed but re-indent to 2 spaces
     if (/^(if\s*\()/i.test(trimmed)) {
       // normalize `if (` spacing slightly

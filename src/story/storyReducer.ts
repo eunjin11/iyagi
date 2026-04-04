@@ -1,3 +1,4 @@
+import { evalWhen } from "./evalWhen";
 import { runScriptWithResult } from "./runScriptWithResult";
 import type { StoryLogEntry } from "./storyLog";
 import type { Choice, Step, Story, VariableBag } from "./types";
@@ -13,6 +14,8 @@ export type StoryEngineState = {
   /** 현재 씬(+주입된 choice steps)에서 이미 표시된 텍스트 목록. */
   pastTexts: string[];
   vars: VariableBag;
+  /** scene-scoped 로컬 변수. scene jump 시 초기화된다. */
+  localVars: VariableBag;
   storyLog: StoryLogEntry[];
 };
 
@@ -23,7 +26,10 @@ export type StoryReducerEvent =
       type: "SCRIPT_DONE";
       code?: string;
       vars: VariableBag;
+      localVars: VariableBag;
       jumpTo: string | null;
+      /** 스크립트 실행 중 액션이 주입한 스텝 (예: rollAttack 결과 텍스트). */
+      injectedSteps?: Step[];
     }
   /** 엔진 스냅샷을 그대로 덮어씌운다(롤백/리플레이용). */
   | { type: "SET_SNAPSHOT"; snapshot: StoryEngineState };
@@ -31,7 +37,8 @@ export type StoryReducerEvent =
 export type StoryEvent =
   | StoryReducerEvent
   | { type: "RUN_SCRIPT"; code: string }
-  | { type: "CHOOSE"; choice: Choice };
+  | { type: "CHOOSE"; choice: Choice }
+  | { type: "EVAL_CONDITIONAL" };
 
 // ---------------------------------------------------------------------------
 // reducer
@@ -67,6 +74,7 @@ export function storyReducer(
       const nextBase: StoryEngineState = {
         ...state,
         vars: event.vars,
+        localVars: event.localVars,
         storyLog:
           logs.length > 0 ? [...state.storyLog, ...logs] : state.storyLog,
       };
@@ -78,6 +86,7 @@ export function storyReducer(
           sceneId: event.jumpTo,
           stepQueue: nextScene ? [...nextScene.steps] : [],
           pastTexts: [],
+          localVars: {},
           storyLog: [
             ...nextBase.storyLog,
             { kind: "enterScene", sceneId: event.jumpTo },
@@ -85,7 +94,11 @@ export function storyReducer(
         };
       }
 
-      return { ...nextBase, stepQueue: state.stepQueue.slice(1) };
+      const remaining = state.stepQueue.slice(1);
+      const newQueue = event.injectedSteps?.length
+        ? [...event.injectedSteps, ...remaining]
+        : remaining;
+      return { ...nextBase, stepQueue: newQueue };
     }
   }
 }
@@ -106,15 +119,32 @@ export function applyStoryEvent(
       ],
     };
   }
+  if (event.type === "EVAL_CONDITIONAL") {
+    const step = state.stepQueue[0];
+    if (step?.type !== "conditional") return state;
+    const mergedVars = { ...state.vars, ...state.localVars };
+    const chosen = evalWhen(step.cond, mergedVars)
+      ? step.thenSteps
+      : step.elseSteps;
+    return { ...state, stepQueue: [...chosen, ...state.stepQueue.slice(1)] };
+  }
   if (event.type === "RUN_SCRIPT") {
-    const { vars, jumpTo } = runScriptWithResult(
+    const { vars, localVars, jumpTo, injectedSteps } = runScriptWithResult(
       event.code,
       state.vars,
       story.varDefs,
+      state.localVars,
     );
     return storyReducer(
       state,
-      { type: "SCRIPT_DONE", code: event.code, vars, jumpTo },
+      {
+        type: "SCRIPT_DONE",
+        code: event.code,
+        vars,
+        localVars,
+        jumpTo,
+        injectedSteps,
+      },
       story,
     );
   }
@@ -128,6 +158,7 @@ export function initialEngineState(story: Story): StoryEngineState {
     stepQueue: scene ? [...scene.steps] : [],
     pastTexts: [],
     vars: { ...(story.init ?? {}) },
+    localVars: {},
     storyLog: [{ kind: "enterScene", sceneId: story.start }],
   };
 }

@@ -22,6 +22,7 @@ export type StoryPlay = {
   isDone: boolean;
   choices: Choice[];
   vars: StoryEngineState["vars"];
+  localVars: StoryEngineState["localVars"];
   storyLog: StoryLogEntry[];
   advance: () => void;
   choose: (choice: Choice) => void;
@@ -64,11 +65,14 @@ export function useStoryPlay(
     state,
   );
 
-  // script 스텝은 자동 실행
+  // script / conditional 스텝은 자동 실행
   useEffect(() => {
     const step = state.stepQueue[0];
-    if (step?.type !== "script") return;
-    dispatch({ type: "RUN_SCRIPT", code: step.code });
+    if (step?.type === "script") {
+      dispatch({ type: "RUN_SCRIPT", code: step.code });
+    } else if (step?.type === "conditional") {
+      dispatch({ type: "EVAL_CONDITIONAL" });
+    }
   }, [dispatch, state.stepQueue]);
 
   function advance() {
@@ -87,6 +91,7 @@ export function useStoryPlay(
     isDone,
     choices,
     vars: state.vars,
+    localVars: state.localVars,
     storyLog: state.storyLog,
     advance,
     choose,

@@ -438,7 +438,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@19"
+                  "$ref": "#/rules@20"
                 },
                 "arguments": []
               }
@@ -525,14 +525,14 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@24"
+              "$ref": "#/rules@25"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@20"
+              "$ref": "#/rules@19"
             },
             "arguments": []
           },
@@ -542,6 +542,123 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
               "$ref": "#/rules@21"
             },
             "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@22"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "entry": false,
+      "fragment": false,
+      "parameters": []
+    },
+    {
+      "$type": "ParserRule",
+      "name": "IfBlock",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Keyword",
+            "value": "if"
+          },
+          {
+            "$type": "Keyword",
+            "value": "("
+          },
+          {
+            "$type": "Assignment",
+            "feature": "cond",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@29"
+              },
+              "arguments": []
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": ")"
+          },
+          {
+            "$type": "Keyword",
+            "value": "{"
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@0"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "Assignment",
+            "feature": "thenItems",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@34"
+              },
+              "arguments": []
+            },
+            "cardinality": "*"
+          },
+          {
+            "$type": "Keyword",
+            "value": "}"
+          },
+          {
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "else"
+              },
+              {
+                "$type": "Keyword",
+                "value": "{"
+              },
+              {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@0"
+                },
+                "arguments": []
+              },
+              {
+                "$type": "Assignment",
+                "feature": "elseItems",
+                "operator": "+=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@34"
+                  },
+                  "arguments": []
+                },
+                "cardinality": "*"
+              },
+              {
+                "$type": "Keyword",
+                "value": "}"
+              }
+            ],
+            "cardinality": "?"
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@0"
+            },
+            "arguments": [],
+            "cardinality": "?"
           }
         ]
       },
@@ -633,7 +750,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@22"
+                "$ref": "#/rules@23"
               },
               "arguments": []
             }
@@ -645,7 +762,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@23"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -882,7 +999,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@25"
+                "$ref": "#/rules@26"
               },
               "arguments": []
             },
@@ -915,14 +1032,14 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@26"
+              "$ref": "#/rules@27"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@27"
+              "$ref": "#/rules@28"
             },
             "arguments": []
           }
@@ -953,7 +1070,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@28"
+                "$ref": "#/rules@29"
               },
               "arguments": []
             }
@@ -985,7 +1102,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@30"
+                "$ref": "#/rules@31"
               },
               "arguments": []
             }
@@ -1033,7 +1150,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@30"
+                "$ref": "#/rules@31"
               },
               "arguments": []
             }
@@ -1062,7 +1179,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
         "terminal": {
           "$type": "RuleCall",
           "rule": {
-            "$ref": "#/rules@29"
+            "$ref": "#/rules@30"
           },
           "arguments": []
         },
@@ -1167,14 +1284,14 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@31"
+              "$ref": "#/rules@32"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@32"
+              "$ref": "#/rules@33"
             },
             "arguments": []
           }
@@ -1201,7 +1318,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@23"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -1249,7 +1366,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@33"
+                "$ref": "#/rules@34"
               },
               "arguments": []
             },
@@ -1274,14 +1391,14 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@34"
+              "$ref": "#/rules@35"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@35"
+              "$ref": "#/rules@36"
             },
             "arguments": []
           }
@@ -1336,7 +1453,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@22"
+                "$ref": "#/rules@23"
               },
               "arguments": []
             }
@@ -1348,7 +1465,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@23"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
