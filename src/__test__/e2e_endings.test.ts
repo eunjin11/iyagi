@@ -72,8 +72,7 @@ function expectAtDoneScene(
 ) {
   expect(s.sceneId).toBe(sceneId);
   // "done" = empty queue or waiting at a choices step
-  const done =
-    s.stepQueue.length === 0 || s.stepQueue[0]?.type === "choices";
+  const done = s.stepQueue.length === 0 || s.stepQueue[0]?.type === "choices";
   expect(done).toBe(true);
 }
 
@@ -139,8 +138,8 @@ describe("e2e endings (engine simulation)", () => {
   it("scene start -> gameover 엔딩", () => {
     // 플레이어 항상 미스(0.8 ≥ 0.7), 적 항상 히트(0.0 < 0.7) 교대
     let callCount = 0;
-    vi.spyOn(Math, "random").mockImplementation(
-      () => (callCount++ % 2 === 0 ? 0.8 : 0.0),
+    vi.spyOn(Math, "random").mockImplementation(() =>
+      callCount++ % 2 === 0 ? 0.8 : 0.0,
     );
 
     let s = initialEngineState(story);

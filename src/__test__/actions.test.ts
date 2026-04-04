@@ -84,7 +84,7 @@ describe("createActions + runScript", () => {
     it("hp 대상으로도 동작", () => {
       vi.spyOn(Math, "random").mockReturnValue(0);
       const { ctx, get } = mockContext({ hp: 5 });
-      runScript("rollAttack(0.7, 1, \"hp\")", { ...ctx.vars }, ctx);
+      runScript('rollAttack(0.7, 1, "hp")', { ...ctx.vars }, ctx);
       expect(get().hp).toBe(4);
     });
   });

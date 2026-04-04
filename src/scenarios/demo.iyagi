@@ -10,10 +10,10 @@ start {
   "바람이 불고, 두 갈래 길이 앞에 펼쳐진다."
   choices: {
     "숲으로 들어간다" ->
-      {
-        dec("hp", 1)
-        jump("forest")
-      }
+    {
+      dec("hp", 1)
+      jump("forest")
+    }
     "마을로 향한다" -> { jump("village") }
   }
 }
@@ -24,15 +24,15 @@ forest {
   "어둠 속에 뭔가 빛나는 게 보인다."
   choices: {
     "열매를 따서 먹는다 (HP+1)" ->
-      {
-        addHp(1)
-        jump("after_fruit")
-      }
+    {
+      addHp(1)
+      jump("after_fruit")
+    }
     "더 깊이 들어간다 (HP-2)" ->
-      {
-        subHp(2)
-        jump("deep")
-      }
+    {
+      subHp(2)
+      jump("deep")
+    }
   }
 }
 
@@ -48,15 +48,15 @@ deep {
   "금화 10개가 나뒹굴고 있다."
   choices: {
     "금화를 챙긴다" ->
-      {
-        inc("gold", 10)
-        jump("after_gold")
-      }
+    {
+      inc("gold", 10)
+      jump("after_gold")
+    }
     "도망친다" ->
-      {
-        set("hp", 5)
-        jump("after_run")
-      }
+    {
+      set("hp", 5)
+      jump("after_run")
+    }
   }
 }
 
@@ -73,12 +73,15 @@ battle {
   "괴한과 대치 중이다."
   "내 HP: $hp | 괴한 HP: $enemyHp"
   choices: {
-    "전투하기" -> { rollAttack(0.7, 2, "enemyHp") }
+    "전투하기" ->
+    {
+      rollAttack(0.7, 2, "enemyHp")
+      "괴한을 공격했다. 괴한의 HP가 $enemyHp 가 되었다."
+    }
     "도망치기" -> { jump("after_run") }
   }
-  "공격을 당했다. 내 HP가 $hp 가 되었다."
   rollAttack(0.7, 1, "hp")
-  "괴한을 공격했다. 괴한의 HP가 $enemyHp 가 되었다."
+  "공격을 당했다. 내 HP가 $hp 가 되었다."
   jump("battle")
 }
 
@@ -104,11 +107,11 @@ village {
   "빵집에서 고소한 냄새가 풍긴다."
   choices: {
     if (gold >= 1) "빵을 산다" ->
-      {
-        dec("gold", 1)
-        inc("hp", 2)
-        jump("going_home")
-      }
+    {
+      dec("gold", 1)
+      inc("hp", 2)
+      jump("going_home")
+    }
     "치유사에게 간다" -> { jump("healer") }
     "다시 길로 나온다" -> { jump("start") }
     "여행을 마치고 집으로 돌아간다" -> { jump("ending") }

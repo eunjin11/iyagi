@@ -69,7 +69,11 @@ describe("snapshot rollback (SET_SNAPSHOT)", () => {
       { type: "SCRIPT_DONE", vars: { gold: 1 }, jumpTo: "b" },
       story,
     );
-    const rolledBack = storyReducer(s1, { type: "SET_SNAPSHOT", snapshot }, story);
+    const rolledBack = storyReducer(
+      s1,
+      { type: "SET_SNAPSHOT", snapshot },
+      story,
+    );
     expect(rolledBack.sceneId).toBe("a");
     expect(rolledBack.stepQueue).toHaveLength(1);
 

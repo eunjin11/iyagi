@@ -4,8 +4,8 @@ const MULTILINE_STATEMENT_COUNT = 2;
 
 const INDENT_SCENE = "  "; // 2 spaces
 const INDENT_CHOICES = "    "; // 4 spaces
-const INDENT_ACTION_BRACE = "      "; // 6 spaces (choices indent + 2)
-const INDENT_ACTION_INNER = "        "; // 8 spaces (choices indent + 4)
+const INDENT_ACTION_BRACE = "    "; // 4 spaces (= choices indent)
+const INDENT_ACTION_INNER = "      "; // 6 spaces (choices indent + 2)
 
 function trimTrailingSemicolon(stmt) {
   return stmt.replace(/;\s*$/, "").trim();
@@ -445,28 +445,40 @@ function formatFile(src) {
         const openTrim = lines[j].trim();
 
         if (openTrim === "{") {
-          // collect until matching `}`
+          // collect until matching `}`, preserving text lines (quoted strings)
           j++;
-          const bodyLines = [];
+          const actionItems = [];
           while (j < lines.length) {
             const innerTrim = lines[j].trim();
             if (innerTrim === "}") break;
             if (innerTrim !== "" && !innerTrim.startsWith("//")) {
-              bodyLines.push(innerTrim);
+              if (innerTrim.startsWith('"')) {
+                actionItems.push(innerTrim); // text line: keep as-is with quotes
+              } else {
+                for (const stmt of splitActionStatements(innerTrim)) {
+                  actionItems.push(stmt);
+                }
+              }
             }
             j++;
-          }
-          const joined = bodyLines.join("\n").trim();
-          const stmts = splitActionStatements(joined);
-          if (stmts.length === 1) {
-            out.push(`${INDENT_CHOICES}"${text}" -> { ${stmts[0]} }`);
-          } else {
-            out.push(`${INDENT_CHOICES}"${text}" ->`);
-            out.push(...formatMultilineAction(stmts));
           }
           // skip closing `}`
           while (j < lines.length && lines[j].trim() !== "}") j++;
           if (j < lines.length) j++;
+
+          const hasText = actionItems.some((item) => item.startsWith('"'));
+          if (!hasText && actionItems.length === 1) {
+            const inlineLine = `${INDENT_CHOICES}"${text}" -> { ${actionItems[0]} }`;
+            if (inlineLine.length <= MULTILINE_LINE_LEN) {
+              out.push(inlineLine);
+            } else {
+              out.push(`${INDENT_CHOICES}"${text}" ->`);
+              out.push(...formatMultilineAction(actionItems));
+            }
+          } else {
+            out.push(`${INDENT_CHOICES}"${text}" ->`);
+            out.push(...formatMultilineAction(actionItems));
+          }
           i = j;
           continue;
         }
