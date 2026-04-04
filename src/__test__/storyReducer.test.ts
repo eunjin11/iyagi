@@ -40,7 +40,7 @@ describe("storyReducer", () => {
     let s = initialEngineState(story);
     s = storyReducer(
       s,
-      { type: "SCRIPT_DONE", vars: { gold: 1 }, jumpTo: "b" },
+      { type: "SCRIPT_DONE", vars: { gold: 1 }, localVars: {}, jumpTo: "b" },
       story,
     );
     expect(s.sceneId).toBe("b");
@@ -65,7 +65,7 @@ describe("storyReducer", () => {
     let s = initialEngineState(story);
     s = storyReducer(
       s,
-      { type: "SCRIPT_DONE", vars: { hp: 5 }, jumpTo: null },
+      { type: "SCRIPT_DONE", vars: { hp: 5 }, localVars: {}, jumpTo: null },
       story,
     );
     expect(s.stepQueue).toEqual([{ type: "text", content: "hi" }]);

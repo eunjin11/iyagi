@@ -28,6 +28,7 @@ describe("snapshot rollback (SET_SNAPSHOT)", () => {
       stepQueue: [...s0.stepQueue],
       pastTexts: [...s0.pastTexts],
       vars: { ...s0.vars },
+      localVars: { ...s0.localVars },
       storyLog: [...s0.storyLog],
     };
 
@@ -37,6 +38,7 @@ describe("snapshot rollback (SET_SNAPSHOT)", () => {
       {
         type: "SCRIPT_DONE",
         vars: { gold: 123 } satisfies VariableBag,
+        localVars: {},
         jumpTo: "b",
       },
       story,
@@ -60,13 +62,14 @@ describe("snapshot rollback (SET_SNAPSHOT)", () => {
       stepQueue: [...s0.stepQueue],
       pastTexts: [...s0.pastTexts],
       vars: { ...s0.vars },
+      localVars: { ...s0.localVars },
       storyLog: [...s0.storyLog],
     };
 
     // 씬 이동 후 롤백
     const s1 = storyReducer(
       s0,
-      { type: "SCRIPT_DONE", vars: { gold: 1 }, jumpTo: "b" },
+      { type: "SCRIPT_DONE", vars: { gold: 1 }, localVars: {}, jumpTo: "b" },
       story,
     );
     const rolledBack = storyReducer(

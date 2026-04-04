@@ -26,7 +26,7 @@ export function useSaveEngine(
     const s = getEngineState();
     const label =
       firstTextInScene(story, s.sceneId)?.slice(0, 40) ??
-      `${s.sceneId} @${s.stepIndex}`;
+      `${s.sceneId} @${s.stepQueue.length}`;
     return saveSnapshot(label, s);
   }, [story, getEngineState]);
 
