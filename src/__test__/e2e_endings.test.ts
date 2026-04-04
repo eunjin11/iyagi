@@ -11,21 +11,16 @@ import {
   initialEngineState,
   storyReducer,
 } from "../story/storyReducer";
-import type { Step, Story, VariableBag } from "../story/types";
+import type { Story, VariableBag } from "../story/types";
 
 function demoStorySource(): string {
   const __dirname = dirname(fileURLToPath(import.meta.url));
   return readFileSync(join(__dirname, "../scenarios/demo.iyagi"), "utf-8");
 }
 
-function getScene(story: Story, sceneId: string) {
-  return story.scenes[sceneId] ?? { id: sceneId, steps: [], choices: [] };
-}
-
-function isDoneInScene(story: Story, s: StoryEngineState) {
-  const scene = getScene(story, s.sceneId);
-  if (scene.choicesAt !== undefined) return s.stepIndex === scene.choicesAt;
-  return s.stepIndex >= scene.steps.length;
+function isDoneInScene(_story: Story, s: StoryEngineState) {
+  if (s.stepQueue.length === 0) return true;
+  return s.stepQueue[0]?.type === "choices";
 }
 
 function tickUntilDone(story: Story, s0: StoryEngineState): StoryEngineState {
@@ -33,28 +28,18 @@ function tickUntilDone(story: Story, s0: StoryEngineState): StoryEngineState {
   const maxTicks = 5000;
   for (let i = 0; i < maxTicks; i++) {
     if (isDoneInScene(story, s)) return s;
-    const scene = getScene(story, s.sceneId);
-
-    let step: Step | undefined;
-    const { choicesAt } = scene;
-    if (choicesAt !== undefined) {
-      if (s.stepIndex < choicesAt) step = scene.steps[s.stepIndex];
-      else if (s.stepIndex > choicesAt) step = scene.steps[s.stepIndex - 1];
-    } else {
-      step = scene.steps[s.stepIndex];
-    }
+    const step = s.stepQueue[0];
     if (!step) return s;
 
     if (step.type === "text") {
       s = storyReducer(s, { type: "TAP_ADVANCE" }, story);
       continue;
     }
-
-    s = applyStoryEvent(
-      s,
-      { type: "RUN_SCRIPT", context: "step", code: step.code },
-      story,
-    );
+    if (step.type === "script") {
+      s = applyStoryEvent(s, { type: "RUN_SCRIPT", code: step.code }, story);
+      continue;
+    }
+    return s;
   }
   throw new Error("tickUntilDone: maxTicks exceeded (possible infinite loop)");
 }
@@ -69,8 +54,10 @@ function chooseByText(
   choiceText: string,
 ): StoryEngineState {
   let s = tickUntilDone(story, s0);
-  const scene = getScene(story, s.sceneId);
-  const choice = scene.choices.find((c) => c.text === choiceText);
+  const choicesStep = s.stepQueue[0];
+  if (!choicesStep || choicesStep.type !== "choices")
+    throw new Error(`not at choices step in scene ${s.sceneId}`);
+  const choice = choicesStep.choices.find((c) => c.text === choiceText);
   if (!choice) throw new Error(`choice not found: ${choiceText}`);
   expect(enabledChoice(choice, s.vars)).toBe(true);
 
@@ -78,10 +65,16 @@ function chooseByText(
   return s;
 }
 
-function expectAtDoneScene(story: Story, s: StoryEngineState, sceneId: string) {
+function expectAtDoneScene(
+  _story: Story,
+  s: StoryEngineState,
+  sceneId: string,
+) {
   expect(s.sceneId).toBe(sceneId);
-  const scene = getScene(story, sceneId);
-  expect(s.stepIndex).toBeGreaterThanOrEqual(scene.steps.length);
+  // "done" = empty queue or waiting at a choices step
+  const done =
+    s.stepQueue.length === 0 || s.stepQueue[0]?.type === "choices";
+  expect(done).toBe(true);
 }
 
 describe("e2e endings (engine simulation)", () => {

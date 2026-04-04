@@ -15,6 +15,13 @@ function demoStorySource(): string {
   return readFileSync(join(__dirname, "../scenarios/demo.iyagi"), "utf-8");
 }
 
+/** scene.steps에서 choices 스텝을 찾아 반환 */
+function findChoicesStep(steps: ReturnType<typeof parseDSL>["story"]["scenes"][string]["steps"]) {
+  return steps.find((s) => s.type === "choices") as
+    | Extract<(typeof steps)[number], { type: "choices" }>
+    | undefined;
+}
+
 describe("parseDSL", () => {
   describe("vars:", () => {
     it("parses numeric·boolean·string 초기값", () => {
@@ -106,7 +113,11 @@ s {
         type: "script",
         code: 'if (hp > 0) jump("t")',
       });
-      expect(s.choices).toEqual([{ text: "가기", script: 'jump("u")' }]);
+      const choicesStep = findChoicesStep(s.steps);
+      expect(choicesStep?.choices[0]).toEqual({
+        text: "가기",
+        steps: [{ type: "script", code: 'jump("u")' }],
+      });
     });
 
     it('선택지 if (cond) "레이블" -> { } 한 줄 → enabledWhen', () => {
@@ -119,13 +130,14 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      expect(story.scenes.s?.choices[0]).toMatchObject({
+      const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
+      expect(choicesStep?.choices[0]).toMatchObject({
         text: "빵",
         enabledWhen: "gold>=1",
       });
-      expect(story.scenes.s?.choices[1]).toEqual({
+      expect(choicesStep?.choices[1]).toEqual({
         text: "길",
-        script: 'jump("x")',
+        steps: [{ type: "script", code: 'jump("x")' }],
       });
     });
 
@@ -142,10 +154,13 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      expect(story.scenes.s?.choices[0]?.text).toBe("도망");
-      expect(story.scenes.s?.choices[0]?.script).toBe(
-        'set("hp", 5)\njump("start")',
-      );
+      const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
+      const choice = choicesStep?.choices[0];
+      expect(choice?.text).toBe("도망");
+      expect(choice?.steps).toEqual([
+        { type: "script", code: 'set("hp", 5)' },
+        { type: "script", code: 'jump("start")' },
+      ]);
     });
 
     it("선택지: 같은 줄 { 멀티라인 본문", () => {
@@ -160,8 +175,10 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      expect(story.scenes.s?.choices[0]?.script).toContain('inc("gold", 1)');
-      expect(story.scenes.s?.choices[0]?.script).toContain('jump("b")');
+      const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
+      const steps = choicesStep?.choices[0]?.steps ?? [];
+      expect(steps.some((s) => s.type === "script" && s.code.includes('inc("gold", 1)'))).toBe(true);
+      expect(steps.some((s) => s.type === "script" && s.code.includes('jump("b")'))).toBe(true);
     });
 
     it("조건부 선택은 if 한 줄만", () => {
@@ -173,11 +190,14 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      expect(story.scenes.s?.choices[0]).toMatchObject({
+      const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
+      expect(choicesStep?.choices[0]).toMatchObject({
         text: "도망",
         enabledWhen: "hp < 3",
       });
-      expect(story.scenes.s?.choices[0]?.script).toContain('jump("safe")');
+      expect(choicesStep?.choices[0]?.steps).toEqual([
+        { type: "script", code: 'jump("safe")' },
+      ]);
     });
   });
 
@@ -192,9 +212,10 @@ s {
       expect(story.init).toEqual({ hp: 10, gold: 0, enemyHp: 10 });
       expect(story.scenes.start).toBeDefined();
       expect(story.scenes.village).toBeDefined();
-      expect(story.scenes.deep?.choices).toHaveLength(2);
-      const run = story.scenes.deep?.choices.find((c) => c.text === "도망친다");
-      expect(run?.script).toContain('set("hp", 5)');
+      const deepChoicesStep = findChoicesStep(story.scenes.deep?.steps ?? []);
+      expect(deepChoicesStep?.choices).toHaveLength(2);
+      const run = deepChoicesStep?.choices.find((c) => c.text === "도망친다");
+      expect(run?.steps.some((s) => s.type === "script" && s.code.includes('set("hp", 5)'))).toBe(true);
     });
 
     it("after_fruit: 진입 스크립트 → 대사 → 대사 이후 inc 스크립트 순 스텝", () => {
@@ -223,34 +244,33 @@ s {
       const village = story.scenes.village;
       expect(village).toBeDefined();
       if (!village) throw new Error('scene "village" not found');
-      expect(village.choices).toHaveLength(4);
 
-      const bread = village.choices.find((c) => c.text === "빵을 산다");
+      const choicesStep = findChoicesStep(village.steps);
+      expect(choicesStep?.choices).toHaveLength(4);
+
+      const bread = choicesStep?.choices.find((c) => c.text === "빵을 산다");
       expect(bread?.enabledWhen).toBe("gold >= 1");
       if (!bread) throw new Error('choice "빵을 산다" not found');
-      if (!bread.enabledWhen)
-        throw new Error('choice "빵을 산다" has no enabledWhen');
-      expect(bread.script).toContain('jump("going_home")');
+      if (!bread.enabledWhen) throw new Error('choice "빵을 산다" has no enabledWhen');
+      expect(bread.steps.some((s) => s.type === "script" && s.code.includes('jump("going_home")'))).toBe(true);
 
       const varsPoor = { hp: 10, gold: 0 };
       const varsRich = { hp: 10, gold: 1 };
       expect(evalWhen(bread.enabledWhen, varsPoor)).toBe(false);
       expect(evalWhen(bread.enabledWhen, varsRich)).toBe(true);
 
-      const heal = village.choices.find((c) => c.text === "치유사에게 간다");
+      const heal = choicesStep?.choices.find((c) => c.text === "치유사에게 간다");
       expect(heal?.enabledWhen).toBeUndefined();
 
-      const road = village.choices.find((c) => c.text === "다시 길로 나온다");
-      const end = village.choices.find(
-        (c) => c.text === "여행을 마치고 집으로 돌아간다",
-      );
+      const road = choicesStep?.choices.find((c) => c.text === "다시 길로 나온다");
+      const end = choicesStep?.choices.find((c) => c.text === "여행을 마치고 집으로 돌아간다");
       expect(road?.enabledWhen).toBeUndefined();
       expect(end?.enabledWhen).toBeUndefined();
     });
   });
 
-  describe("무명 씬 (익명 블록)", () => {
-    it("블록 안에 텍스트 라인이 있으면 무명 씬을 생성하고 choice.script 는 jump()", () => {
+  describe("choice 블록 내 텍스트", () => {
+    it("블록 안에 텍스트 라인이 있으면 choice.steps에 text 스텝 포함", () => {
       const { story, errors } = parseDSL(`
 s {
   choices: {
@@ -264,21 +284,19 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      const choice = story.scenes.s?.choices[0];
+      const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
+      const choice = choicesStep?.choices[0];
       expect(choice?.text).toBe("공격");
-
-      // script 는 jump("__anon_0") 형태
-      const anonId = choice?.script.match(/jump\("([^"]+)"\)/)?.[1];
-      expect(anonId).toMatch(/^__anon_/);
-
-      const anon = anonId ? story.scenes[anonId] : undefined;
-      expect(anon).toBeDefined();
-      expect(anon?.steps[0]).toEqual({ type: "script", code: 'set("x", 1)' });
-      expect(anon?.steps[1]).toEqual({ type: "text", content: "공격했다!" });
-      expect(anon?.steps[2]).toEqual({ type: "script", code: 'jump("next")' });
+      expect(choice?.steps).toEqual([
+        { type: "script", code: 'set("x", 1)' },
+        { type: "text", content: "공격했다!" },
+        { type: "script", code: 'jump("next")' },
+      ]);
+      // 무명 씬 없음
+      expect(Object.keys(story.scenes).every((k) => !k.startsWith("__anon_"))).toBe(true);
     });
 
-    it("텍스트 없는 블록은 무명 씬을 만들지 않고 기존 script 문자열 반환", () => {
+    it("텍스트 없는 블록도 정상 파싱", () => {
       const { story, errors } = parseDSL(`
 s {
   choices: {
@@ -291,14 +309,15 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      const choice = story.scenes.s?.choices[0];
-      expect(choice?.script).toContain('set("x", 0)');
-      expect(choice?.script).toContain('jump("out")');
-      // 무명 씬 없음
-      expect(Object.keys(story.scenes).every((k) => !k.startsWith("__anon_"))).toBe(true);
+      const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
+      const steps = choicesStep?.choices[0]?.steps ?? [];
+      expect(steps).toEqual([
+        { type: "script", code: 'set("x", 0)' },
+        { type: "script", code: 'jump("out")' },
+      ]);
     });
 
-    it("여러 선택지에 각각 무명 씬 — ID가 순서대로 증가", () => {
+    it("여러 선택지 각각 독립적인 steps", () => {
       const { story, errors } = parseDSL(`
 s {
   choices: {
@@ -316,17 +335,13 @@ s {
 }
 `);
       expect(errors).toEqual([]);
-      const [c0, c1] = story.scenes.s?.choices ?? [];
-      const id0 = c0?.script.match(/jump\("([^"]+)"\)/)?.[1];
-      const id1 = c1?.script.match(/jump\("([^"]+)"\)/)?.[1];
-      expect(id0).toMatch(/^__anon_/);
-      expect(id1).toMatch(/^__anon_/);
-      expect(id0).not.toBe(id1);
-      expect(story.scenes[id0!]?.steps[0]).toMatchObject({ type: "text", content: "A 결과" });
-      expect(story.scenes[id1!]?.steps[0]).toMatchObject({ type: "text", content: "B 결과" });
+      const choicesStep = findChoicesStep(story.scenes.s?.steps ?? []);
+      const [c0, c1] = choicesStep?.choices ?? [];
+      expect(c0?.steps[0]).toMatchObject({ type: "text", content: "A 결과" });
+      expect(c1?.steps[0]).toMatchObject({ type: "text", content: "B 결과" });
     });
 
-    it("무명 씬과 engine 통합: 텍스트 스텝 진행 후 jump 실행", () => {
+    it("choice steps + engine 통합: 텍스트 스텝 진행 후 jump 실행", () => {
       const { story, errors } = parseDSL(`
 s {
   "시작"
@@ -347,19 +362,20 @@ t { "끝" }
 
       // "시작" 텍스트 → TAP_ADVANCE
       state = applyStoryEvent(state, { type: "TAP_ADVANCE" }, story);
-      // isDone → choices 표시 → choose "go"
-      const choice = story.scenes.s!.choices[0]!;
+      // choices 스텝 → CHOOSE
+      const choicesStep = state.stepQueue[0] as Extract<typeof state.stepQueue[0], { type: "choices" }>;
+      expect(choicesStep.type).toBe("choices");
+      const choice = choicesStep.choices[0]!;
       state = applyStoryEvent(state, { type: "CHOOSE", choice }, story);
 
-      // 무명 씬에서 "중간" 텍스트
-      expect(state.sceneId).toMatch(/^__anon_/);
-      expect(state.stepIndex).toBe(0);
+      // choice.steps 주입: "중간" 텍스트
+      expect(state.stepQueue[0]).toEqual({ type: "text", content: "중간" });
 
       state = applyStoryEvent(state, { type: "TAP_ADVANCE" }, story);
-      // jump("t") 스크립트 자동 실행은 useEffect에서 하지만 여기선 수동
+      // jump("t") 스크립트 자동 실행
       state = applyStoryEvent(
         state,
-        { type: "RUN_SCRIPT", context: "step", code: 'jump("t")' },
+        { type: "RUN_SCRIPT", code: 'jump("t")' },
         story,
       );
       expect(state.sceneId).toBe("t");

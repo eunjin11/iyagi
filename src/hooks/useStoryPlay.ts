@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { deriveFromState, resolveStep } from "../story/engineDerived";
+import { deriveFromState } from "../story/engineDerived";
 import type { StoryLogEntry } from "../story/storyLog";
 import {
   applyStoryEvent,
@@ -59,15 +59,17 @@ export function useStoryPlay(
 
   const getEngineState = useCallback(() => stateRef.current, []);
 
-  const { scene, steps, currentStep, isDone, pastTexts, choices } =
-    deriveFromState(story, state);
+  const { scene, currentStep, isDone, pastTexts, choices } = deriveFromState(
+    story,
+    state,
+  );
 
+  // script 스텝은 자동 실행
   useEffect(() => {
-    const step = resolveStep(scene, state.stepIndex);
-    if (!step || step.type !== "script") return;
-
-    dispatch({ type: "RUN_SCRIPT", context: "step", code: step.code });
-  }, [dispatch, scene, state.stepIndex]);
+    const step = state.stepQueue[0];
+    if (step?.type !== "script") return;
+    dispatch({ type: "RUN_SCRIPT", code: step.code });
+  }, [dispatch, state.stepQueue]);
 
   function advance() {
     dispatch({ type: "TAP_ADVANCE" });

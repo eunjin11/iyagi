@@ -38,9 +38,9 @@ yarn build && yarn preview
   - **`"따옴표로 감싼 한 줄`** — 텍스트 스텝
   - **그 외 한 줄** — 스크립트 스텝 (예: `if (hp <= 0) jump("gameover")`, `inc("hp", 1)`)
   - **`choices: { ... }`** — 선택지 블록 (명시적 `{}` 필수)
-    - **`if (조건식) "레이블" -> { 스크립트 }`** — 조건이 참일 때만 선택 가능
-    - 액션 블록 `{ }` 안에 텍스트 라인이 있으면 컴파일 타임에 익명 씬(`__anon_N`)으로 자동 분리
-  - `choices: { }` 뒤에 텍스트·스크립트를 쓰면 **선택 후 자동 실행** (Option B 패턴)
+    - **`if (조건식) "레이블" -> { ... }`** — 조건이 참일 때만 선택 가능
+    - 액션 블록 `{ }` 안에 텍스트 라인과 스크립트 라인을 자유롭게 섞어 쓸 수 있음
+  - `choices: { }` 뒤에 텍스트·스크립트를 쓰면 **선택 후 자동 실행** (선택된 choice.steps 소진 후 이어서 처리)
 
 ## 같은 내용을 더 짧게: `.iyagi` vs JS(Object)
 
@@ -82,16 +82,26 @@ const story = {
   scenes: {
     village: {
       id: "village",
-      steps: [],
-      choices: [
+      steps: [
+        { type: "text", content: "마을은 평화롭다. 장터가 북적인다." },
+        { type: "text", content: "빵집에서 고소한 냄새가 풍긴다." },
         {
-          text: "빵을 산다",
-          enabledWhen: "gold >= 1",
-          script: 'dec("gold", 1);\ninc("hp", 2);\njump("going_home")',
-        },
-        {
-          text: "다시 길로 나온다",
-          script: 'jump("start")',
+          type: "choices",
+          choices: [
+            {
+              text: "빵을 산다",
+              enabledWhen: "gold >= 1",
+              steps: [
+                { type: "script", code: 'dec("gold", 1)' },
+                { type: "script", code: 'inc("hp", 2)' },
+                { type: "script", code: 'jump("going_home")' },
+              ],
+            },
+            {
+              text: "다시 길로 나온다",
+              steps: [{ type: "script", code: 'jump("start")' }],
+            },
+          ],
         },
       ],
     },

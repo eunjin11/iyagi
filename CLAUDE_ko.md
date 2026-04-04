@@ -36,7 +36,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 - **`useStoryEngine`** (`src/hooks/useStoryEngine.ts`) — 플레이 + 세이브/로드를 합친 최상위 훅
 - **`useStoryPlay`** (`src/hooks/useStoryPlay.ts`) — `useReducer(storyReducer, ...)`를 감싸고 `{ scene, currentStep, pastTexts, choices, vars, advance, choose }` 노출
-- **`storyReducer`** (`src/story/storyReducer.ts`) — 상태 머신. 이벤트: `TAP_ADVANCE`, `SCRIPT_DONE`, `SET_SNAPSHOT`, `RUN_SCRIPT`, `CHOOSE`. 상태 형태: `{ sceneId, stepIndex, vars, storyLog }`
+- **`storyReducer`** (`src/story/storyReducer.ts`) — 상태 머신. 이벤트: `TAP_ADVANCE`, `SCRIPT_DONE`, `SET_SNAPSHOT`, `RUN_SCRIPT`, `CHOOSE`. 상태 형태: `{ sceneId, stepQueue, pastTexts, vars, storyLog }`
 - **`useSaveEngine`** (`src/hooks/useSaveEngine.ts`) — 스냅샷을 `localStorage`에 저장
 
 ### 액션 시스템
@@ -65,61 +65,26 @@ yarn vitest run src/__test__/actions.test.ts
 
 `TextLine`(`"..."`)과 `ScriptLine`(스크립트)을 구별하기 위해 `ScriptHead`는 STRING을 제외한다. `ScriptLine`의 첫 토큰이 STRING이면 `TextLine`으로 파싱된다. 두 번째 토큰 이후(`tailTokens`)는 `ScriptToken`을 사용해 STRING도 허용한다. `ActionScriptLine`도 동일한 전략으로 `ActionTextLine`과 구별된다.
 
-### choicesAt — post-step 인코딩
+### stepQueue 아키텍처
 
-씬에 `choices:` 뒤에 스텝이 있을 때(Option B 패턴), `Scene.choicesAt` 필드로 "선택지가 표시되는 stepIndex 슬롯"을 기록한다.
+`StoryEngineState`는 `stepIndex: number` 대신 `stepQueue: Step[]`을 보유한다. 씬 진입 시 `[...scene.steps]`를 큐에 복사한다. 스텝은 앞에서부터 꺼내며 진행한다.
 
-- `stepIndex < choicesAt` → 선택 전 스텝 (`steps[stepIndex]`)
-- `stepIndex === choicesAt` → 선택지 표시 (`isDone = true`)
-- `stepIndex > choicesAt` → 선택 후 스텝 (`steps[stepIndex - 1]`)
+- **`TAP_ADVANCE`**: `text` 스텝을 팝, 내용을 `pastTexts`에 추가
+- **`RUN_SCRIPT`** / **`SCRIPT_DONE`**: `script` 스텝을 팝; `jumpTo`가 있으면 새 씬 스텝으로 큐를 리셋
+- **`CHOOSE`**: 큐 앞의 `choices` 스텝을 선택된 `choice.steps`로 교체 — `[...choice.steps, ...queue.slice(1)]`
 
-`engineDerived.ts`의 `resolveStep(scene, stepIndex)` 헬퍼로 로직을 통일한다. 단, 순환 의존성 방지를 위해 `storyReducer.ts` 내부에 같은 로직을 로컬로 복사했다.
+`choices`는 `Step` 유니온의 정식 타입이다. 큐 맨 앞에 `choices` 스텝이 있으면 UI가 선택지 목록을 렌더링한다. `isDone` = `stepQueue.length === 0`.
 
-### 무명 씬 (`__anon_N`)
+이 방식은 이전의 `stepIndex` + `choicesAt` + `resolveStep()` 구조를 대체하며, 선택지 블록 내 텍스트 라인을 위한 무명 씬(`__anon_N`) 생성도 제거했다. 선택지 액션 블록은 이제 `Choice.steps: Step[]`으로 직접 컴파일된다.
 
-**조건:** 선택지 액션 블록 `{ }` 안에 텍스트 라인이 하나라도 있으면 무명 씬 생성. 스크립트만 있으면 생성하지 않고 스크립트 문자열을 그대로 반환한다.
-
-**파싱 시점(컴파일 타임)에** `astToStory.ts`가 처리한다. 엔진(`storyReducer`)은 전혀 모른다.
+**post-choices 스텝**도 자연스럽게 동작한다: DSL에서 `choices:` 뒤에 배치된 스텝은 큐에서 `choices` 스텝 뒤에 위치하며, 주입된 `choice.steps`가 소진된 후 이어서 처리된다.
 
 ```
-// .iyagi
-"공격" ->
-  {
-    set("x", 1)
-    "공격했다!"     ← 텍스트 라인 있음 → 무명 씬 생성
-    jump("next")
-  }
-
-// 파싱 결과
-choice  = { text: "공격", script: 'jump("__anon_0")' }
-scenes["__anon_0"] = {
-  steps: [
-    { type: "script", code: 'set("x", 1)' },
-    { type: "text",   content: "공격했다!" },
-    { type: "script", code: 'jump("next")' },
-  ],
-  choices: []
-}
-
-// 텍스트 없는 블록 — 무명 씬 없음
-"도망" -> { set("x", 0)  jump("out") }
-choice  = { text: "도망", script: 'set("x", 0)\njump("out")' }
+// CHOOSE 상태 전이
+stepQueue: [choices, postStep1, postStep2]
+  → CHOOSE "선택지 A"  (choice.steps = [scriptA, textA])
+stepQueue: [scriptA, textA, postStep1, postStep2]
 ```
-
-**런타임 흐름:**
-```
-CHOOSE "공격"
-  → choice.script 실행: jump("__anon_0")
-  → sceneId = "__anon_0", stepIndex = 0
-  → script set("x",1)   자동 실행
-  → text  "공격했다!"   TAP_ADVANCE 대기
-  → script jump("next") 자동 실행
-  → sceneId = "next"
-```
-
-**여러 선택지:** `anonCounter`가 파일 전체에서 단조 증가(`__anon_0`, `__anon_1`, ...)하므로 ID 충돌 없음.
-
-**핵심:** 엔진은 `__anon_0`을 일반 씬과 동일하게 처리한다. 복잡한 분기 처리는 파싱 단계에서 끝난다.
 
 ---
 
@@ -138,10 +103,11 @@ sceneId {
     if (hp >= 5) "선택지 A" -> { jump("nextScene") }
     "선택지 B" -> {
       set("alive", false)
+      "도망쳤다!"           // 선택지 블록 내 텍스트 라인 — 가능
       jump("other")
     }
   }
-  "선택지 이후 post-step"   // 선택 후 자동 실행 (choicesAt)
+  "선택지 이후 post-step"   // choice.steps 소진 후 이어서 처리
 }
 
 inline { "text" "text2" }    // InlineScene: 스텝만, 스크립트 없음
@@ -151,4 +117,4 @@ inline { "text" "text2" }    // InlineScene: 스텝만, 스크립트 없음
 
 `choices: { }` — 명시적 중괄호 필수. 각 선택지는 `->`와 액션 블록으로 끝난다.
 
-액션 블록(`-> { }`) 안에 텍스트 라인이 있으면 파싱 시점에 무명 씬(`__anon_N`)으로 컴파일된다.
+액션 블록(`-> { }`) 안에 텍스트 라인과 스크립트 라인을 자유롭게 섞어 쓸 수 있다. 파싱 시점에 `Choice.steps: Step[]`으로 컴파일되며, 중간 씬은 생성하지 않는다.

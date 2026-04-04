@@ -36,7 +36,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 - **`useStoryEngine`** (`src/hooks/useStoryEngine.ts`) — top-level hook combining play + save/load
 - **`useStoryPlay`** (`src/hooks/useStoryPlay.ts`) — wraps `useReducer(storyReducer, ...)` and exposes `{ scene, currentStep, pastTexts, choices, vars, advance, choose }`
-- **`storyReducer`** (`src/story/storyReducer.ts`) — state machine. Events: `TAP_ADVANCE`, `SCRIPT_DONE`, `SET_SNAPSHOT`, `RUN_SCRIPT`, `CHOOSE`. State shape: `{ sceneId, stepIndex, vars, storyLog }`
+- **`storyReducer`** (`src/story/storyReducer.ts`) — state machine. Events: `TAP_ADVANCE`, `SCRIPT_DONE`, `SET_SNAPSHOT`, `RUN_SCRIPT`, `CHOOSE`. State shape: `{ sceneId, stepQueue, pastTexts, vars, storyLog }`
 - **`useSaveEngine`** (`src/hooks/useSaveEngine.ts`) — persists snapshots to `localStorage`
 
 ### Action System
@@ -65,61 +65,26 @@ The initial implementation hard-coded indentation levels using fixed terminals `
 
 To distinguish `TextLine` (`"..."`) from `ScriptLine` (script), `ScriptHead` excludes STRING. If the first token of a line is a STRING, it is parsed as a `TextLine`. Tokens after the first (`tailTokens`) use `ScriptToken`, which does allow STRING. `ActionScriptLine` uses the same strategy to stay unambiguous from `ActionTextLine`.
 
-### choicesAt — post-step encoding
+### stepQueue architecture
 
-When a scene has steps after its `choices:` block (Option B pattern), `Scene.choicesAt` records the stepIndex slot where choices are displayed.
+`StoryEngineState` holds a `stepQueue: Step[]` rather than a `stepIndex: number`. Scene entry copies `[...scene.steps]` into the queue. Steps are consumed from the front:
 
-- `stepIndex < choicesAt` → pre-choice step (`steps[stepIndex]`)
-- `stepIndex === choicesAt` → show choices (`isDone = true`)
-- `stepIndex > choicesAt` → post-choice step (`steps[stepIndex - 1]`)
+- **`TAP_ADVANCE`**: pops a `text` step, appends content to `pastTexts`
+- **`RUN_SCRIPT`** / **`SCRIPT_DONE`**: pops a `script` step; if `jumpTo` is set, resets the queue to the new scene's steps
+- **`CHOOSE`**: replaces the `choices` step at the front with the selected choice's steps — `[...choice.steps, ...queue.slice(1)]`
 
-A `resolveStep(scene, stepIndex)` helper in `engineDerived.ts` unifies this logic. The same logic is duplicated locally inside `storyReducer.ts` to avoid a circular import.
+`choices` is a first-class `Step` type. A `choices` step at the front of the queue signals the UI to render the choice list. `isDone` = `stepQueue.length === 0`.
 
-### Anonymous scenes (`__anon_N`)
+This replaces the previous `stepIndex` + `choicesAt` + `resolveStep()` approach and eliminates anonymous scene generation (`__anon_N`) for choice blocks that contain text lines. Choice action blocks now compile directly to `Choice.steps: Step[]`.
 
-**Trigger:** If a choice action block `{ }` contains at least one text line, an anonymous scene is generated. A block with only script lines returns a plain script string with no scene created.
-
-**Handled at parse time** by `astToStory.ts`. The engine (`storyReducer`) has no knowledge of this.
+**Post-choices steps** still work naturally: steps placed after a `choices:` block in the DSL appear after the `choices` step in the queue, and are processed once the injected `choice.steps` are consumed.
 
 ```
-// .iyagi
-"Attack" ->
-  {
-    set("x", 1)
-    "You attacked!"   ← text line present → generate anonymous scene
-    jump("next")
-  }
-
-// Parse result
-choice  = { text: "Attack", script: 'jump("__anon_0")' }
-scenes["__anon_0"] = {
-  steps: [
-    { type: "script", code: 'set("x", 1)' },
-    { type: "text",   content: "You attacked!" },
-    { type: "script", code: 'jump("next")' },
-  ],
-  choices: []
-}
-
-// Block with no text — no anonymous scene
-"Flee" -> { set("x", 0)  jump("out") }
-choice  = { text: "Flee", script: 'set("x", 0)\njump("out")' }
+// State transition for CHOOSE
+stepQueue: [choices, postStep1, postStep2]
+  → CHOOSE "Option A"  (choice.steps = [scriptA, textA])
+stepQueue: [scriptA, textA, postStep1, postStep2]
 ```
-
-**Runtime flow:**
-```
-CHOOSE "Attack"
-  → execute choice.script: jump("__anon_0")
-  → sceneId = "__anon_0", stepIndex = 0
-  → script set("x",1)      auto-executed
-  → text   "You attacked!"  waits for TAP_ADVANCE
-  → script jump("next")    auto-executed
-  → sceneId = "next"
-```
-
-**Multiple choices:** `anonCounter` increments monotonically across the entire file (`__anon_0`, `__anon_1`, ...), so IDs never collide.
-
-**Key point:** The engine treats `__anon_0` exactly like any regular scene. All the complex branching logic is resolved at parse time.
 
 ---
 
@@ -138,10 +103,11 @@ sceneId {
     if (hp >= 5) "Option A" -> { jump("nextScene") }
     "Option B" -> {
       set("alive", false)
+      "You fled!"           // text line inside choice block — OK
       jump("other")
     }
   }
-  "Post-step after choices"   // runs after a choice is made (choicesAt)
+  "Post-step after choices"   // processed after the chosen choice.steps finish
 }
 
 inline { "text" "text2" }    // InlineScene: steps only, no script
@@ -151,4 +117,4 @@ inline { "text" "text2" }    // InlineScene: steps only, no script
 
 `choices: { }` — explicit braces required. Each choice ends with `->` and an action block.
 
-Action blocks (`-> { }`) with text lines inside are compiled to anonymous scenes (`__anon_N`) at parse time.
+Action blocks (`-> { }`) may contain a mix of script lines and quoted text lines. These compile to `Choice.steps: Step[]` — no intermediate scenes are generated.

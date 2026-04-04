@@ -78,7 +78,6 @@ const PlayPage = ({ resumeState = null, onGoHome }: Props) => {
 
         <div className={css.choiceSlot}>
           <ChoiceList
-            isDone={isDone}
             choices={choices}
             vars={vars}
             onChoose={choose}

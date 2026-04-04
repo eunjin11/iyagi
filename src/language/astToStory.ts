@@ -12,6 +12,7 @@ import type {
   ChoiceLine,
   Document as IyagiDocumentAst,
   Scene as IyagiSceneAst,
+  PlainChoice,
 } from "./__generated__/ast.js";
 import {
   isActionTextLine,
@@ -21,7 +22,6 @@ import {
   isInlineAction,
   isInlineScene,
   isMultiLineScene,
-  isPlainChoice,
   isScriptLine,
   isTextLine,
   isVarsBlock,
@@ -33,12 +33,20 @@ export type AstToStoryResult = {
 };
 
 function unquoteStringLiteral(raw: string): string {
-  // raw is `"..."` with possible escapes
   if (raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"')) {
     const inner = raw.slice(1, -1);
     return inner.replace(/\\(.)/g, "$1");
   }
   return raw;
+}
+
+function cstLineText(
+  node: { $cstNode?: { text: string } } | undefined,
+  indent: number,
+): string {
+  const text = node?.$cstNode?.text ?? "";
+  const withoutNl = text.replace(/\r?\n$/, "");
+  return withoutNl.slice(indent).trimEnd();
 }
 
 function cstLineTextAuto(
@@ -69,52 +77,38 @@ function parseVarValue(raw: string): number | string | boolean | undefined {
   if (raw === "false") return false;
   if (/^-?\d+$/.test(raw)) return Number(raw);
   if (/^-?\d+\.\d+$/.test(raw) || /^-?\d*\.\d+$/.test(raw)) return Number(raw);
-  // Langium value converter may already strip quotes from STRING.
   return raw.startsWith('"') && raw.endsWith('"')
     ? unquoteStringLiteral(raw)
     : raw;
 }
 
-function choiceScriptFromAction(
-  action: ChoiceAction | undefined,
-  anonScenes: Record<string, Scene>,
-  anonCounter: { n: number },
-): string {
-  if (!action) return "";
+/** choice action block → Step[] */
+function choiceStepsFromAction(action: ChoiceAction | undefined): Step[] {
+  if (!action) return [];
   if (isInlineAction(action)) {
-    return cstBetween(action, "{", "}");
+    const code = cstBetween(action, "{", "}");
+    return code ? [{ type: "script", code }] : [];
   }
-  if (!isBlockAction(action)) return "";
+  if (!isBlockAction(action)) return [];
 
-  const lines = action.lines;
-  const hasText = lines.some((l) => isActionTextLine(l));
-
-  if (!hasText) {
-    return lines.map((l) => cstLineTextAuto(l)).join("\n").trim();
-  }
-
-  // 텍스트가 있으면 무명 씬으로 변환
-  const anonId = `__anon_${anonCounter.n++}`;
   const steps: Step[] = [];
-  for (const line of lines) {
+  for (const line of action.lines) {
     if (isActionTextLine(line)) {
       for (const t of line.texts) {
         steps.push({ type: "text", content: unquoteStringLiteral(t) });
       }
     } else {
-      steps.push({ type: "script", code: cstLineTextAuto(line) });
+      const code = cstLineTextAuto(line);
+      if (code) steps.push({ type: "script", code });
     }
   }
-  anonScenes[anonId] = { id: anonId, steps, choices: [] };
-  return `jump("${anonId}")`;
+  return steps;
 }
 
 function choiceFromLine(
   line: ChoiceLine,
   errors: string[],
   sceneId: string,
-  anonScenes: Record<string, Scene>,
-  anonCounter: { n: number },
 ): Choice {
   if (isIfChoice(line)) {
     const enabledWhen = (line.cond.$cstNode?.text ?? "").trim();
@@ -126,41 +120,30 @@ function choiceFromLine(
     return {
       text: unquoteStringLiteral(line.text),
       enabledWhen,
-      script: choiceScriptFromAction(line.action, anonScenes, anonCounter),
+      steps: choiceStepsFromAction(line.action),
     };
   }
-  if (!isPlainChoice(line)) return { text: "", script: "" };
+  const plain = line as PlainChoice;
   return {
-    text: unquoteStringLiteral(line.text),
-    script: choiceScriptFromAction(line.action, anonScenes, anonCounter),
+    text: unquoteStringLiteral(plain.text),
+    steps: choiceStepsFromAction(plain.action),
   };
 }
 
-function sceneFromAst(
-  scene: IyagiSceneAst,
-  errors: string[],
-  anonScenes: Record<string, Scene>,
-  anonCounter: { n: number },
-): Scene {
+function sceneFromAst(scene: IyagiSceneAst, errors: string[]): Scene {
   if (isInlineScene(scene)) {
     const steps: Step[] = scene.texts.map((t) => ({
       type: "text",
       content: unquoteStringLiteral(t),
     }));
-    return { id: scene.name, steps, choices: [] };
+    return { id: scene.name, steps };
   }
 
   if (!isMultiLineScene(scene)) {
-    return {
-      id: (scene as { name?: string }).name ?? "unknown",
-      steps: [],
-      choices: [],
-    };
+    return { id: (scene as { name?: string }).name ?? "unknown", steps: [] };
   }
 
   const steps: Step[] = [];
-  const choices: Choice[] = [];
-  let choicesAtCandidate: number | undefined;
 
   for (const item of scene.items) {
     if (isTextLine(item)) {
@@ -174,26 +157,14 @@ function sceneFromAst(
       continue;
     }
     if (isChoiceBlock(item)) {
-      choicesAtCandidate = steps.length;
-      for (const c of item.choices) {
-        choices.push(
-          choiceFromLine(c, errors, scene.name, anonScenes, anonCounter),
-        );
-      }
+      const choices: Choice[] = item.choices.map((c) =>
+        choiceFromLine(c, errors, scene.name),
+      );
+      steps.push({ type: "choices", choices });
     }
   }
 
-  const choicesAt =
-    choicesAtCandidate !== undefined && steps.length > choicesAtCandidate
-      ? choicesAtCandidate
-      : undefined;
-
-  return {
-    id: scene.name,
-    steps,
-    choices,
-    ...(choicesAt !== undefined ? { choicesAt } : {}),
-  };
+  return { id: scene.name, steps };
 }
 
 export function astToStory(
@@ -203,8 +174,6 @@ export function astToStory(
 ): AstToStoryResult {
   const errors: string[] = [...parseErrors];
   const scenes: Record<string, Scene> = {};
-  const anonScenes: Record<string, Scene> = {};
-  const anonCounter = { n: 0 };
 
   const initFromVars: VariableBag = {};
   const varDefs: VarDef[] = [];
@@ -221,9 +190,8 @@ export function astToStory(
   }
 
   for (const s of ast.scenes) {
-    scenes[s.name] = sceneFromAst(s, errors, anonScenes, anonCounter);
+    scenes[s.name] = sceneFromAst(s, errors);
   }
-  Object.assign(scenes, anonScenes);
 
   const firstId = ast.scenes[0]?.name ?? "start";
   const titleFromDslRaw = typeof ast.title === "string" ? ast.title : "";

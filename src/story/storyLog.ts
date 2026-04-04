@@ -3,4 +3,4 @@ export type StoryLogEntry =
   | { kind: "enterScene"; sceneId: string }
   | { kind: "text"; sceneId: string; content: string }
   | { kind: "script"; sceneId: string; code: string }
-  | { kind: "choice"; sceneId: string; text: string; script: string };
+  | { kind: "choice"; sceneId: string; text: string };
