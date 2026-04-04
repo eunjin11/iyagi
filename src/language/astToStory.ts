@@ -12,7 +12,6 @@ import type {
   ChoiceLine,
   Document as IyagiDocumentAst,
   Scene as IyagiSceneAst,
-  PlainChoice,
 } from "./__generated__/ast.js";
 import {
   isActionTextLine,
@@ -22,6 +21,7 @@ import {
   isInlineAction,
   isInlineScene,
   isMultiLineScene,
+  isPlainChoice,
   isScriptLine,
   isTextLine,
   isVarsBlock,
@@ -129,10 +129,10 @@ function choiceFromLine(
       script: choiceScriptFromAction(line.action, anonScenes, anonCounter),
     };
   }
-  const plain = line as PlainChoice;
+  if (!isPlainChoice(line)) return { text: "", script: "" };
   return {
-    text: unquoteStringLiteral(plain.text),
-    script: choiceScriptFromAction(plain.action, anonScenes, anonCounter),
+    text: unquoteStringLiteral(line.text),
+    script: choiceScriptFromAction(line.action, anonScenes, anonCounter),
   };
 }
 
@@ -160,7 +160,7 @@ function sceneFromAst(
 
   const steps: Step[] = [];
   const choices: Choice[] = [];
-  let choicesAtCandidate: number | undefined = undefined;
+  let choicesAtCandidate: number | undefined;
 
   for (const item of scene.items) {
     if (isTextLine(item)) {

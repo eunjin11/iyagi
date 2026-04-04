@@ -22,6 +22,7 @@
 - [x] **Option B (post-steps)**: `choices:` 블록 뒤에 텍스트·스크립트를 배치해 선택 결과를 인라인으로 표현 (`choicesAt` 필드)
 - [x] **무명 씬 (익명 블록)**: 선택지 액션 블록 `{ }` 안에 텍스트 라인을 쓰면 컴파일 타임에 `__anon_N` 씬으로 변환
 - [x] **화면 흔들림 효과**: `rollAttack` 히트 시 `_shakeTick` → CSS `shakeActive` 애니메이션
+- [x] **Grammar delimiter 기반 개선**: `IND2`/`IND4`/`IND6`/`IND8` 고정 터미널 제거 → `choices: { }` 명시적 구분자 도입, `ActionLine6/8` 단일 `ActionLine`으로 병합, `indentationDiagnostics.ts` 삭제
 
 ---
 
@@ -34,16 +35,16 @@
   또는 엔진에 **call stack** 추가 (`storyLog` 외 `returnStack` 필드)
 
 ### 선택지 중첩 (nested choices)
-무명 씬 블록 안에서 다시 `choices:` 블록 사용.
+무명 씬 블록 안에서 다시 `choices: { }` 블록 사용.
 
-- [ ] Grammar에 IND6/IND8 레벨 `choices:` 규칙 추가
-- [ ] `astToStory`에서 재귀적으로 무명 씬 내 choices 처리
+- [ ] `BlockAction`의 `ActionLine`에 `ChoiceBlock` 추가 (Grammar 수정 → `yarn langium:generate`)
+- [ ] `astToStory`에서 무명 씬 내 choices 재귀 처리
 
 ### 인라인 블록 텍스트 지원
 `"option" -> { "text" jump("x") }` 한 줄 형태.
 
-- [ ] `InlineAction` 파싱 시 독립 STRING 토큰을 텍스트 스텝으로 감지하는 로직 추가
-  (현재는 JS 표현식으로 처리되어 무시됨)
+- [ ] `InlineAction`(`codeTokens`)에서 독립 STRING 토큰을 텍스트 스텝으로 감지하는 로직 추가
+  (현재 `cstBetween`으로 통째로 스크립트 문자열로 처리됨)
 
 ### 무명 씬 ID 로그 숨기기
 `StoryLogPanel`에 `enterScene: __anon_0` 같은 내부 ID가 노출됨.
@@ -182,21 +183,14 @@ show (gold >= 5): "주머니가 묵직하다."
 - [ ] 타이틀 화면에서 `scenarios/` 내 모든 `.iyagi` 목록 표시
 - [ ] 스토리 선택 → 플레이 진입
 
-### 2-4. Langium 기반 DSL 파서 (`langium-cli`)
+### 2-4. Langium 기반 DSL 파서 (`langium-cli`) ✅ 기본 완료
 
-DSL 파서는 이미 **Langium** 기반으로 동작 중(`src/language/iyagi.langium`, `parseIyagi`, `astToStory`). 실행(`runScript`)과는 분리: **스크립트 줄은 JS 전체를 파싱하지 않고** 문자열(한 줄 또는 choice 블록 내)로만 잡아 기존과 같이 넘긴다.
-
-**스크립트 줄 규칙 (문법 설계 시):**
-
-- 쌍따옴표로 감싼 한 줄 → 텍스트 스텝
-- `choices:` 및 그 아래 선택지 패턴 → Choice
-- **그 외 한 줄** → `ScriptLine`(임의 스크립트, 개행까지). `choices`·대사 규칙보다 **나중에** 매칭되도록 우선순위 정리
-- `vars:` 블록(1-4)·`show:`(2-2)·중괄호 depth는 문법 또는 하이브리드 보조 로직으로 정리
+DSL 파서는 **Langium** 기반으로 동작 중(`src/language/iyagi.langium`, `parseIyagi`, `astToStory`). `choices: { }` delimiter 기반 문법으로 개선 완료. 스크립트 줄은 JS 전체를 파싱하지 않고 문자열로만 잡아 `new Function`으로 실행.
 
 **작업:**
 
 - [x] 의존성: `langium`, `langium-cli`
-- [x] `src/language/iyagi.langium`
+- [x] `src/language/iyagi.langium` — delimiter 기반 문법 (`choices: {}`, 들여쓰기 자유)
 - [x] `package.json` 스크립트: `langium:generate` + `langium-config.json` → `src/language/__generated__/`
 - [x] `parseIyagi` + `astToStory`로 입력 문자열 → AST → `Story`
 - [ ] 커스텀 `ValidationRegistry` / 진단 — 알 수 없는 씬 참조, 빈 `choices:` 등
