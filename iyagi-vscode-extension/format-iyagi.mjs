@@ -256,8 +256,19 @@ function formatFile(src) {
 
     // inside scenes
     if (trimmed === "}") {
+      if (inChoices && raw.startsWith(" ")) {
+        // 들여쓴 `}` → choices 블록 닫기
+        inChoices = false;
+        out.push(`${INDENT_SCENE}}`);
+        i++;
+        continue;
+      }
+      // 들여쓰지 않은 `}` → scene 닫기 (old format 대응: choices도 같이 닫음)
+      if (inChoices) {
+        out.push(`${INDENT_SCENE}}`);
+        inChoices = false;
+      }
       inScene = false;
-      inChoices = false;
       out.push("}");
       i++;
       continue;
@@ -272,9 +283,15 @@ function formatFile(src) {
       i++;
       continue;
     }
-    if (trimmed === "choices:") {
+    if (/^choices:\s*\{?\s*$/.test(trimmed)) {
       inChoices = true;
-      out.push(`${INDENT_SCENE}choices:`);
+      out.push(`${INDENT_SCENE}choices: {`);
+      // If no `{` on this line, peek at the next non-empty line for a standalone `{`
+      if (!trimmed.includes("{")) {
+        let j = i + 1;
+        while (j < lines.length && lines[j].trim() === "") j++;
+        if (j < lines.length && lines[j].trim() === "{") i = j;
+      }
       i++;
       continue;
     }
@@ -479,9 +496,8 @@ function formatFile(src) {
         continue;
       }
 
-      // not a recognized choice line: end choices section for formatting
-      inChoices = false;
-      out.push(`${INDENT_SCENE}${trimmed}`);
+      // unrecognized content inside choices block: keep at choices indent
+      out.push(`${INDENT_CHOICES}${trimmed}`);
       i++;
       continue;
     }
