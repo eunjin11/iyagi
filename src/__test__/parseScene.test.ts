@@ -92,8 +92,9 @@ going_home {
 s {
   "대사"
   if (hp > 0) jump("t")
-  choices:
+  choices: {
     "가기" -> { jump("u") }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -111,9 +112,10 @@ s {
     it('선택지 if (cond) "레이블" -> { } 한 줄 → enabledWhen', () => {
       const { story, errors } = parseDSL(`
 s {
-  choices:
+  choices: {
     if ( gold>=1 ) "빵" -> { dec("gold", 1) }
     "길" -> { jump("x") }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -130,12 +132,13 @@ s {
     it("선택지: -> 다음 줄에 { … } 멀티라인", () => {
       const { story, errors } = parseDSL(`
 s {
-  choices:
+  choices: {
     "도망" ->
       {
         set("hp", 5)
         jump("start")
       }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -148,11 +151,12 @@ s {
     it("선택지: 같은 줄 { 멀티라인 본문", () => {
       const { story, errors } = parseDSL(`
 s {
-  choices:
+  choices: {
     "a" -> {
       inc("gold", 1)
       jump("b")
     }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -163,8 +167,9 @@ s {
     it("조건부 선택은 if 한 줄만", () => {
       const { story, errors } = parseDSL(`
 s {
-  choices:
+  choices: {
     if (hp < 3) "도망" -> { jump("safe") }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -248,13 +253,14 @@ s {
     it("블록 안에 텍스트 라인이 있으면 무명 씬을 생성하고 choice.script 는 jump()", () => {
       const { story, errors } = parseDSL(`
 s {
-  choices:
+  choices: {
     "공격" ->
       {
         set("x", 1)
         "공격했다!"
         jump("next")
       }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -275,12 +281,13 @@ s {
     it("텍스트 없는 블록은 무명 씬을 만들지 않고 기존 script 문자열 반환", () => {
       const { story, errors } = parseDSL(`
 s {
-  choices:
+  choices: {
     "도망" ->
       {
         set("x", 0)
         jump("out")
       }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -294,7 +301,7 @@ s {
     it("여러 선택지에 각각 무명 씬 — ID가 순서대로 증가", () => {
       const { story, errors } = parseDSL(`
 s {
-  choices:
+  choices: {
     "A" ->
       {
         "A 결과"
@@ -305,6 +312,7 @@ s {
         "B 결과"
         jump("end")
       }
+  }
 }
 `);
       expect(errors).toEqual([]);
@@ -322,12 +330,13 @@ s {
       const { story, errors } = parseDSL(`
 s {
   "시작"
-  choices:
+  choices: {
     "go" ->
       {
         "중간"
         jump("t")
       }
+  }
 }
 
 t { "끝" }

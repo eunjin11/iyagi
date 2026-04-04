@@ -15,8 +15,8 @@ import type {
   PlainChoice,
 } from "./__generated__/ast.js";
 import {
-  isActionTextLine6,
-  isActionTextLine8,
+  isActionTextLine,
+  isBlockAction,
   isChoiceBlock,
   isIfChoice,
   isInlineAction,
@@ -39,16 +39,6 @@ function unquoteStringLiteral(raw: string): string {
     return inner.replace(/\\(.)/g, "$1");
   }
   return raw;
-}
-
-function cstLineText(
-  node: { $cstNode?: { text: string } } | undefined,
-  indent: number,
-): string {
-  const text = node?.$cstNode?.text ?? "";
-  // CST includes indentation and trailing newline; strip both.
-  const withoutNl = text.replace(/\r?\n$/, "");
-  return withoutNl.slice(indent).trimEnd();
 }
 
 function cstLineTextAuto(
@@ -85,10 +75,6 @@ function parseVarValue(raw: string): number | string | boolean | undefined {
     : raw;
 }
 
-function isActionTextLine(l: unknown): l is { texts: string[] } {
-  return isActionTextLine6(l) || isActionTextLine8(l);
-}
-
 function choiceScriptFromAction(
   action: ChoiceAction | undefined,
   anonScenes: Record<string, Scene>,
@@ -98,9 +84,9 @@ function choiceScriptFromAction(
   if (isInlineAction(action)) {
     return cstBetween(action, "{", "}");
   }
-  if (!("block" in action) || !action.block) return "";
+  if (!isBlockAction(action)) return "";
 
-  const lines = action.block.lines;
+  const lines = action.lines;
   const hasText = lines.some((l) => isActionTextLine(l));
 
   if (!hasText) {
@@ -184,7 +170,7 @@ function sceneFromAst(
       continue;
     }
     if (isScriptLine(item)) {
-      steps.push({ type: "script", code: cstLineText(item, 2) });
+      steps.push({ type: "script", code: cstLineTextAuto(item) });
       continue;
     }
     if (isChoiceBlock(item)) {
