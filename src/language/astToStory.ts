@@ -15,6 +15,8 @@ import type {
   PlainChoice,
 } from "./__generated__/ast.js";
 import {
+  isActionTextLine6,
+  isActionTextLine8,
   isChoiceBlock,
   isIfChoice,
   isInlineAction,
@@ -83,21 +85,50 @@ function parseVarValue(raw: string): number | string | boolean | undefined {
     : raw;
 }
 
-function choiceScriptFromAction(action: ChoiceAction | undefined): string {
+function isActionTextLine(l: unknown): l is { texts: string[] } {
+  return isActionTextLine6(l) || isActionTextLine8(l);
+}
+
+function choiceScriptFromAction(
+  action: ChoiceAction | undefined,
+  anonScenes: Record<string, Scene>,
+  anonCounter: { n: number },
+): string {
   if (!action) return "";
   if (isInlineAction(action)) {
-    return cstBetween(action, "{", "}"); // preserve inner text (no indentation)
+    return cstBetween(action, "{", "}");
   }
-  // block actions
   if (!("block" in action) || !action.block) return "";
-  const lines = action.block.lines.map((l) => cstLineTextAuto(l));
-  return lines.join("\n").trim();
+
+  const lines = action.block.lines;
+  const hasText = lines.some((l) => isActionTextLine(l));
+
+  if (!hasText) {
+    return lines.map((l) => cstLineTextAuto(l)).join("\n").trim();
+  }
+
+  // 텍스트가 있으면 무명 씬으로 변환
+  const anonId = `__anon_${anonCounter.n++}`;
+  const steps: Step[] = [];
+  for (const line of lines) {
+    if (isActionTextLine(line)) {
+      for (const t of line.texts) {
+        steps.push({ type: "text", content: unquoteStringLiteral(t) });
+      }
+    } else {
+      steps.push({ type: "script", code: cstLineTextAuto(line) });
+    }
+  }
+  anonScenes[anonId] = { id: anonId, steps, choices: [] };
+  return `jump("${anonId}")`;
 }
 
 function choiceFromLine(
   line: ChoiceLine,
   errors: string[],
   sceneId: string,
+  anonScenes: Record<string, Scene>,
+  anonCounter: { n: number },
 ): Choice {
   if (isIfChoice(line)) {
     const enabledWhen = (line.cond.$cstNode?.text ?? "").trim();
@@ -109,18 +140,22 @@ function choiceFromLine(
     return {
       text: unquoteStringLiteral(line.text),
       enabledWhen,
-      script: choiceScriptFromAction(line.action),
+      script: choiceScriptFromAction(line.action, anonScenes, anonCounter),
     };
   }
-  // PlainChoice
   const plain = line as PlainChoice;
   return {
     text: unquoteStringLiteral(plain.text),
-    script: choiceScriptFromAction(plain.action),
+    script: choiceScriptFromAction(plain.action, anonScenes, anonCounter),
   };
 }
 
-function sceneFromAst(scene: IyagiSceneAst, errors: string[]): Scene {
+function sceneFromAst(
+  scene: IyagiSceneAst,
+  errors: string[],
+  anonScenes: Record<string, Scene>,
+  anonCounter: { n: number },
+): Scene {
   if (isInlineScene(scene)) {
     const steps: Step[] = scene.texts.map((t) => ({
       type: "text",
@@ -139,6 +174,7 @@ function sceneFromAst(scene: IyagiSceneAst, errors: string[]): Scene {
 
   const steps: Step[] = [];
   const choices: Choice[] = [];
+  let choicesAtCandidate: number | undefined = undefined;
 
   for (const item of scene.items) {
     if (isTextLine(item)) {
@@ -152,13 +188,26 @@ function sceneFromAst(scene: IyagiSceneAst, errors: string[]): Scene {
       continue;
     }
     if (isChoiceBlock(item)) {
+      choicesAtCandidate = steps.length;
       for (const c of item.choices) {
-        choices.push(choiceFromLine(c, errors, scene.name));
+        choices.push(
+          choiceFromLine(c, errors, scene.name, anonScenes, anonCounter),
+        );
       }
     }
   }
 
-  return { id: scene.name, steps, choices };
+  const choicesAt =
+    choicesAtCandidate !== undefined && steps.length > choicesAtCandidate
+      ? choicesAtCandidate
+      : undefined;
+
+  return {
+    id: scene.name,
+    steps,
+    choices,
+    ...(choicesAt !== undefined ? { choicesAt } : {}),
+  };
 }
 
 export function astToStory(
@@ -168,6 +217,8 @@ export function astToStory(
 ): AstToStoryResult {
   const errors: string[] = [...parseErrors];
   const scenes: Record<string, Scene> = {};
+  const anonScenes: Record<string, Scene> = {};
+  const anonCounter = { n: 0 };
 
   const initFromVars: VariableBag = {};
   const varDefs: VarDef[] = [];
@@ -184,8 +235,9 @@ export function astToStory(
   }
 
   for (const s of ast.scenes) {
-    scenes[s.name] = sceneFromAst(s, errors);
+    scenes[s.name] = sceneFromAst(s, errors, anonScenes, anonCounter);
   }
+  Object.assign(scenes, anonScenes);
 
   const firstId = ast.scenes[0]?.name ?? "start";
   const titleFromDslRaw = typeof ast.title === "string" ? ast.title : "";

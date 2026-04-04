@@ -73,34 +73,88 @@ export function isActionBlockSameLine(item: unknown): item is ActionBlockSameLin
     return reflection.isInstance(item, ActionBlockSameLine.$type);
 }
 
-export interface ActionLine6 extends langium.AstNode {
-    readonly $container: ActionBlockSameLine;
-    readonly $type: 'ActionLine6';
-    codeTokens: Array<ScriptToken>;
-}
+export type ActionLine6 = ActionScriptLine6 | ActionTextLine6;
 
 export const ActionLine6 = {
-    $type: 'ActionLine6',
-    codeTokens: 'codeTokens'
+    $type: 'ActionLine6'
 } as const;
 
 export function isActionLine6(item: unknown): item is ActionLine6 {
     return reflection.isInstance(item, ActionLine6.$type);
 }
 
-export interface ActionLine8 extends langium.AstNode {
-    readonly $container: ActionBlockNextLine;
-    readonly $type: 'ActionLine8';
-    codeTokens: Array<ScriptToken>;
-}
+export type ActionLine8 = ActionScriptLine8 | ActionTextLine8;
 
 export const ActionLine8 = {
-    $type: 'ActionLine8',
-    codeTokens: 'codeTokens'
+    $type: 'ActionLine8'
 } as const;
 
 export function isActionLine8(item: unknown): item is ActionLine8 {
     return reflection.isInstance(item, ActionLine8.$type);
+}
+
+export interface ActionScriptLine6 extends langium.AstNode {
+    readonly $container: ActionBlockSameLine;
+    readonly $type: 'ActionScriptLine6';
+    head: ScriptHead;
+    tailTokens: Array<ScriptToken>;
+}
+
+export const ActionScriptLine6 = {
+    $type: 'ActionScriptLine6',
+    head: 'head',
+    tailTokens: 'tailTokens'
+} as const;
+
+export function isActionScriptLine6(item: unknown): item is ActionScriptLine6 {
+    return reflection.isInstance(item, ActionScriptLine6.$type);
+}
+
+export interface ActionScriptLine8 extends langium.AstNode {
+    readonly $container: ActionBlockNextLine;
+    readonly $type: 'ActionScriptLine8';
+    head: ScriptHead;
+    tailTokens: Array<ScriptToken>;
+}
+
+export const ActionScriptLine8 = {
+    $type: 'ActionScriptLine8',
+    head: 'head',
+    tailTokens: 'tailTokens'
+} as const;
+
+export function isActionScriptLine8(item: unknown): item is ActionScriptLine8 {
+    return reflection.isInstance(item, ActionScriptLine8.$type);
+}
+
+export interface ActionTextLine6 extends langium.AstNode {
+    readonly $container: ActionBlockSameLine;
+    readonly $type: 'ActionTextLine6';
+    texts: Array<string>;
+}
+
+export const ActionTextLine6 = {
+    $type: 'ActionTextLine6',
+    texts: 'texts'
+} as const;
+
+export function isActionTextLine6(item: unknown): item is ActionTextLine6 {
+    return reflection.isInstance(item, ActionTextLine6.$type);
+}
+
+export interface ActionTextLine8 extends langium.AstNode {
+    readonly $container: ActionBlockNextLine;
+    readonly $type: 'ActionTextLine8';
+    texts: Array<string>;
+}
+
+export const ActionTextLine8 = {
+    $type: 'ActionTextLine8',
+    texts: 'texts'
+} as const;
+
+export function isActionTextLine8(item: unknown): item is ActionTextLine8 {
+    return reflection.isInstance(item, ActionTextLine8.$type);
 }
 
 export interface BlockActionNextLine extends langium.AstNode {
@@ -410,6 +464,10 @@ export type iyagiAstType = {
     ActionBlockSameLine: ActionBlockSameLine
     ActionLine6: ActionLine6
     ActionLine8: ActionLine8
+    ActionScriptLine6: ActionScriptLine6
+    ActionScriptLine8: ActionScriptLine8
+    ActionTextLine6: ActionTextLine6
+    ActionTextLine8: ActionTextLine8
     BlockActionNextLine: BlockActionNextLine
     BlockActionSameLine: BlockActionSameLine
     ChoiceAction: ChoiceAction
@@ -455,22 +513,60 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
         ActionLine6: {
             name: ActionLine6.$type,
             properties: {
-                codeTokens: {
-                    name: ActionLine6.codeTokens,
-                    defaultValue: []
-                }
             },
             superTypes: []
         },
         ActionLine8: {
             name: ActionLine8.$type,
             properties: {
-                codeTokens: {
-                    name: ActionLine8.codeTokens,
+            },
+            superTypes: []
+        },
+        ActionScriptLine6: {
+            name: ActionScriptLine6.$type,
+            properties: {
+                head: {
+                    name: ActionScriptLine6.head
+                },
+                tailTokens: {
+                    name: ActionScriptLine6.tailTokens,
                     defaultValue: []
                 }
             },
-            superTypes: []
+            superTypes: [ActionLine6.$type]
+        },
+        ActionScriptLine8: {
+            name: ActionScriptLine8.$type,
+            properties: {
+                head: {
+                    name: ActionScriptLine8.head
+                },
+                tailTokens: {
+                    name: ActionScriptLine8.tailTokens,
+                    defaultValue: []
+                }
+            },
+            superTypes: [ActionLine8.$type]
+        },
+        ActionTextLine6: {
+            name: ActionTextLine6.$type,
+            properties: {
+                texts: {
+                    name: ActionTextLine6.texts,
+                    defaultValue: []
+                }
+            },
+            superTypes: [ActionLine6.$type]
+        },
+        ActionTextLine8: {
+            name: ActionTextLine8.$type,
+            properties: {
+                texts: {
+                    name: ActionTextLine8.texts,
+                    defaultValue: []
+                }
+            },
+            superTypes: [ActionLine8.$type]
         },
         BlockActionNextLine: {
             name: BlockActionNextLine.$type,

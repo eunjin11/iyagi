@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { deriveFromState } from "../story/engineDerived";
+import { deriveFromState, resolveStep } from "../story/engineDerived";
 import type { StoryLogEntry } from "../story/storyLog";
 import {
   applyStoryEvent,
@@ -63,11 +63,11 @@ export function useStoryPlay(
     deriveFromState(story, state);
 
   useEffect(() => {
-    const step = steps[state.stepIndex];
+    const step = resolveStep(scene, state.stepIndex);
     if (!step || step.type !== "script") return;
 
     dispatch({ type: "RUN_SCRIPT", context: "step", code: step.code });
-  }, [dispatch, steps, state.stepIndex]);
+  }, [dispatch, scene, state.stepIndex]);
 
   function advance() {
     dispatch({ type: "TAP_ADVANCE" });

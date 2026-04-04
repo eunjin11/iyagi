@@ -1,6 +1,6 @@
 import { runScriptWithResult } from "./runScriptWithResult";
 import type { StoryLogEntry } from "./storyLog";
-import type { Choice, Scene, Story, VariableBag } from "./types";
+import type { Choice, Scene, Step, Story, VariableBag } from "./types";
 
 // ---------------------------------------------------------------------------
 // state / events
@@ -39,6 +39,14 @@ function emptyScene(id: string): Scene {
   return { id, steps: [], choices: [] };
 }
 
+function resolveStep(scene: Scene, stepIndex: number): Step | undefined {
+  const { steps, choicesAt } = scene;
+  if (choicesAt === undefined) return steps[stepIndex];
+  if (stepIndex < choicesAt) return steps[stepIndex];
+  if (stepIndex === choicesAt) return undefined;
+  return steps[stepIndex - 1];
+}
+
 // ---------------------------------------------------------------------------
 // reducer
 // ---------------------------------------------------------------------------
@@ -54,7 +62,7 @@ export function storyReducer(
     }
     case "TAP_ADVANCE": {
       const scene = story.scenes[state.sceneId] ?? emptyScene(state.sceneId);
-      const step = scene.steps[state.stepIndex];
+      const step = resolveStep(scene, state.stepIndex);
       if (!step || step.type !== "text") return state;
       const nextLog: StoryLogEntry = {
         kind: "text",
@@ -92,6 +100,11 @@ export function storyReducer(
         };
       }
       if (event.context === "step") {
+        return { ...nextBase, stepIndex: state.stepIndex + 1 };
+      }
+      // choice context: advance into post-steps if scene has choicesAt
+      const scene = story.scenes[state.sceneId] ?? emptyScene(state.sceneId);
+      if (scene.choicesAt !== undefined) {
         return { ...nextBase, stepIndex: state.stepIndex + 1 };
       }
       return nextBase;

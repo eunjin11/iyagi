@@ -1356,7 +1356,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@40"
+                "$ref": "#/rules@42"
               },
               "arguments": []
             }
@@ -1415,6 +1415,32 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
       "$type": "ParserRule",
       "name": "ActionLine6",
       "definition": {
+        "$type": "Alternatives",
+        "elements": [
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@40"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@41"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "entry": false,
+      "fragment": false,
+      "parameters": []
+    },
+    {
+      "$type": "ParserRule",
+      "name": "ActionTextLine6",
+      "definition": {
         "$type": "Group",
         "elements": [
           {
@@ -1426,7 +1452,58 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
           },
           {
             "$type": "Assignment",
-            "feature": "codeTokens",
+            "feature": "texts",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@9"
+              },
+              "arguments": []
+            },
+            "cardinality": "+"
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@0"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "entry": false,
+      "fragment": false,
+      "parameters": []
+    },
+    {
+      "$type": "ParserRule",
+      "name": "ActionScriptLine6",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@3"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "Assignment",
+            "feature": "head",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@26"
+              },
+              "arguments": []
+            }
+          },
+          {
+            "$type": "Assignment",
+            "feature": "tailTokens",
             "operator": "+=",
             "terminal": {
               "$type": "RuleCall",
@@ -1435,7 +1512,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
               },
               "arguments": []
             },
-            "cardinality": "+"
+            "cardinality": "*"
           },
           {
             "$type": "RuleCall",
@@ -1463,7 +1540,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@41"
+                "$ref": "#/rules@43"
               },
               "arguments": []
             },
@@ -1498,6 +1575,32 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
       "$type": "ParserRule",
       "name": "ActionLine8",
       "definition": {
+        "$type": "Alternatives",
+        "elements": [
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@44"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@45"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "entry": false,
+      "fragment": false,
+      "parameters": []
+    },
+    {
+      "$type": "ParserRule",
+      "name": "ActionTextLine8",
+      "definition": {
         "$type": "Group",
         "elements": [
           {
@@ -1509,7 +1612,58 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
           },
           {
             "$type": "Assignment",
-            "feature": "codeTokens",
+            "feature": "texts",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@9"
+              },
+              "arguments": []
+            },
+            "cardinality": "+"
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@0"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "entry": false,
+      "fragment": false,
+      "parameters": []
+    },
+    {
+      "$type": "ParserRule",
+      "name": "ActionScriptLine8",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@2"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "Assignment",
+            "feature": "head",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@26"
+              },
+              "arguments": []
+            }
+          },
+          {
+            "$type": "Assignment",
+            "feature": "tailTokens",
             "operator": "+=",
             "terminal": {
               "$type": "RuleCall",
@@ -1518,7 +1672,7 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
               },
               "arguments": []
             },
-            "cardinality": "+"
+            "cardinality": "*"
           },
           {
             "$type": "RuleCall",

@@ -9,19 +9,31 @@ export function emptyScene(id: string): Scene {
   return { id, steps: [], choices: [] };
 }
 
+export function resolveStep(scene: Scene, stepIndex: number): Step | undefined {
+  const { steps, choicesAt } = scene;
+  if (choicesAt === undefined) return steps[stepIndex];
+  if (stepIndex < choicesAt) return steps[stepIndex];
+  if (stepIndex === choicesAt) return undefined;
+  return steps[stepIndex - 1];
+}
+
 export function deriveFromState(story: Story, state: StoryEngineState) {
   const scene: Scene = story.scenes[state.sceneId] ?? emptyScene(state.sceneId);
   const steps = scene.steps;
 
-  const at = steps[state.stepIndex];
+  const at = resolveStep(scene, state.stepIndex);
   const currentStep: Extract<Step, { type: "text" }> | null =
     at?.type === "text" ? at : null;
-  const isDone = state.stepIndex >= steps.length;
+
+  const isDone =
+    scene.choicesAt !== undefined
+      ? state.stepIndex === scene.choicesAt
+      : state.stepIndex >= steps.length;
 
   const pastTexts: string[] = [];
   for (let i = 0; i < state.stepIndex; i++) {
-    const s = steps[i];
-    if (s.type === "text") pastTexts.push(s.content);
+    const s = resolveStep(scene, i);
+    if (s?.type === "text") pastTexts.push(s.content);
   }
 
   const choices: Choice[] = isDone ? scene.choices : [];

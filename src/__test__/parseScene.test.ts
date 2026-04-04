@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseDSL } from "../parser/parseScene";
 import { evalWhen } from "../story/evalWhen";
+import {
+  applyStoryEvent,
+  initialEngineState,
+} from "../story/storyReducer";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -237,6 +241,119 @@ s {
       );
       expect(road?.enabledWhen).toBeUndefined();
       expect(end?.enabledWhen).toBeUndefined();
+    });
+  });
+
+  describe("무명 씬 (익명 블록)", () => {
+    it("블록 안에 텍스트 라인이 있으면 무명 씬을 생성하고 choice.script 는 jump()", () => {
+      const { story, errors } = parseDSL(`
+s {
+  choices:
+    "공격" ->
+      {
+        set("x", 1)
+        "공격했다!"
+        jump("next")
+      }
+}
+`);
+      expect(errors).toEqual([]);
+      const choice = story.scenes.s?.choices[0];
+      expect(choice?.text).toBe("공격");
+
+      // script 는 jump("__anon_0") 형태
+      const anonId = choice?.script.match(/jump\("([^"]+)"\)/)?.[1];
+      expect(anonId).toMatch(/^__anon_/);
+
+      const anon = anonId ? story.scenes[anonId] : undefined;
+      expect(anon).toBeDefined();
+      expect(anon?.steps[0]).toEqual({ type: "script", code: 'set("x", 1)' });
+      expect(anon?.steps[1]).toEqual({ type: "text", content: "공격했다!" });
+      expect(anon?.steps[2]).toEqual({ type: "script", code: 'jump("next")' });
+    });
+
+    it("텍스트 없는 블록은 무명 씬을 만들지 않고 기존 script 문자열 반환", () => {
+      const { story, errors } = parseDSL(`
+s {
+  choices:
+    "도망" ->
+      {
+        set("x", 0)
+        jump("out")
+      }
+}
+`);
+      expect(errors).toEqual([]);
+      const choice = story.scenes.s?.choices[0];
+      expect(choice?.script).toContain('set("x", 0)');
+      expect(choice?.script).toContain('jump("out")');
+      // 무명 씬 없음
+      expect(Object.keys(story.scenes).every((k) => !k.startsWith("__anon_"))).toBe(true);
+    });
+
+    it("여러 선택지에 각각 무명 씬 — ID가 순서대로 증가", () => {
+      const { story, errors } = parseDSL(`
+s {
+  choices:
+    "A" ->
+      {
+        "A 결과"
+        jump("end")
+      }
+    "B" ->
+      {
+        "B 결과"
+        jump("end")
+      }
+}
+`);
+      expect(errors).toEqual([]);
+      const [c0, c1] = story.scenes.s?.choices ?? [];
+      const id0 = c0?.script.match(/jump\("([^"]+)"\)/)?.[1];
+      const id1 = c1?.script.match(/jump\("([^"]+)"\)/)?.[1];
+      expect(id0).toMatch(/^__anon_/);
+      expect(id1).toMatch(/^__anon_/);
+      expect(id0).not.toBe(id1);
+      expect(story.scenes[id0!]?.steps[0]).toMatchObject({ type: "text", content: "A 결과" });
+      expect(story.scenes[id1!]?.steps[0]).toMatchObject({ type: "text", content: "B 결과" });
+    });
+
+    it("무명 씬과 engine 통합: 텍스트 스텝 진행 후 jump 실행", () => {
+      const { story, errors } = parseDSL(`
+s {
+  "시작"
+  choices:
+    "go" ->
+      {
+        "중간"
+        jump("t")
+      }
+}
+
+t { "끝" }
+`);
+      expect(errors).toEqual([]);
+
+      let state = initialEngineState(story);
+
+      // "시작" 텍스트 → TAP_ADVANCE
+      state = applyStoryEvent(state, { type: "TAP_ADVANCE" }, story);
+      // isDone → choices 표시 → choose "go"
+      const choice = story.scenes.s!.choices[0]!;
+      state = applyStoryEvent(state, { type: "CHOOSE", choice }, story);
+
+      // 무명 씬에서 "중간" 텍스트
+      expect(state.sceneId).toMatch(/^__anon_/);
+      expect(state.stepIndex).toBe(0);
+
+      state = applyStoryEvent(state, { type: "TAP_ADVANCE" }, story);
+      // jump("t") 스크립트 자동 실행은 useEffect에서 하지만 여기선 수동
+      state = applyStoryEvent(
+        state,
+        { type: "RUN_SCRIPT", context: "step", code: 'jump("t")' },
+        story,
+      );
+      expect(state.sceneId).toBe("t");
     });
   });
 

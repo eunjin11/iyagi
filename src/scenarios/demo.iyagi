@@ -78,12 +78,6 @@ battle {
   jump("battle")
 }
 
-battle_round {
-  "공격을 당했다. 내 HP가 $hp 가 되었다."
-  "괴한을 공격했다. 괴한의 HP가 $enemyHp 가 되었다."
-  jump("battle")
-}
-
 battle_win {
   "괴한을 물리쳤다!"
   addGold(10)

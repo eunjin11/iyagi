@@ -17,6 +17,41 @@
 
 ---
 
+## 최근 완료
+
+- [x] **Option B (post-steps)**: `choices:` 블록 뒤에 텍스트·스크립트를 배치해 선택 결과를 인라인으로 표현 (`choicesAt` 필드)
+- [x] **무명 씬 (익명 블록)**: 선택지 액션 블록 `{ }` 안에 텍스트 라인을 쓰면 컴파일 타임에 `__anon_N` 씬으로 변환
+- [x] **화면 흔들림 효과**: `rollAttack` 히트 시 `_shakeTick` → CSS `shakeActive` 애니메이션
+
+---
+
+## 무명 씬 후속 작업
+
+### 무명 씬 + post-step 연계
+선택지 블록에 텍스트가 있어 무명 씬으로 변환될 때, 부모 씬에 `choicesAt`(post-step)이 함께 있으면 무명 씬 종료 후 post-step으로 자동 진입하지 않음. 현재는 무명 씬 끝에 명시적 `jump()`를 넣어야 함.
+
+- [ ] 컴파일 타임에 무명 씬 끝에 부모 씬 continuation jump 자동 삽입
+  또는 엔진에 **call stack** 추가 (`storyLog` 외 `returnStack` 필드)
+
+### 선택지 중첩 (nested choices)
+무명 씬 블록 안에서 다시 `choices:` 블록 사용.
+
+- [ ] Grammar에 IND6/IND8 레벨 `choices:` 규칙 추가
+- [ ] `astToStory`에서 재귀적으로 무명 씬 내 choices 처리
+
+### 인라인 블록 텍스트 지원
+`"option" -> { "text" jump("x") }` 한 줄 형태.
+
+- [ ] `InlineAction` 파싱 시 독립 STRING 토큰을 텍스트 스텝으로 감지하는 로직 추가
+  (현재는 JS 표현식으로 처리되어 무시됨)
+
+### 무명 씬 ID 로그 숨기기
+`StoryLogPanel`에 `enterScene: __anon_0` 같은 내부 ID가 노출됨.
+
+- [ ] `__anon_` 접두사 씬 진입 로그는 표시 필터링
+
+---
+
 ## Phase 1 — 게임플레이 완성 (필수)
 
 ### 1-4. 변수 선언 DSL + 헬퍼 함수 자동 생성 (최우선)

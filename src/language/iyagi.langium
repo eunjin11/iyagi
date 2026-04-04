@@ -166,13 +166,27 @@ ActionBlockSameLine:
   IND4 '}' NL?;
 
 ActionLine6:
-  IND6 codeTokens+=ScriptToken+ NL;
+    ActionTextLine6
+  | ActionScriptLine6;
+
+ActionTextLine6:
+  IND6 texts+=STRING+ NL;
+
+ActionScriptLine6:
+  IND6 head=ScriptHead tailTokens+=ScriptToken* NL;
 
 ActionBlockNextLine:
   lines+=ActionLine8*
   IND6 '}' NL?;
 
 ActionLine8:
-  IND8 codeTokens+=ScriptToken+ NL;
+    ActionTextLine8
+  | ActionScriptLine8;
+
+ActionTextLine8:
+  IND8 texts+=STRING+ NL;
+
+ActionScriptLine8:
+  IND8 head=ScriptHead tailTokens+=ScriptToken* NL;
 
 

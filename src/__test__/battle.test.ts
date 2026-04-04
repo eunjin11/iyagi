@@ -11,7 +11,7 @@ import {
   initialEngineState,
   storyReducer,
 } from "../story/storyReducer";
-import type { Story, VariableBag } from "../story/types";
+import type { Step, Story, VariableBag } from "../story/types";
 
 function demoStorySource(): string {
   const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +24,7 @@ function getScene(story: Story, sceneId: string) {
 
 function isDoneInScene(story: Story, s: StoryEngineState) {
   const scene = getScene(story, s.sceneId);
+  if (scene.choicesAt !== undefined) return s.stepIndex === scene.choicesAt;
   return s.stepIndex >= scene.steps.length;
 }
 
@@ -33,7 +34,15 @@ function tickUntilDone(story: Story, s0: StoryEngineState): StoryEngineState {
   for (let i = 0; i < maxTicks; i++) {
     if (isDoneInScene(story, s)) return s;
     const scene = getScene(story, s.sceneId);
-    const step = scene.steps[s.stepIndex];
+
+    let step: Step | undefined;
+    const { choicesAt } = scene;
+    if (choicesAt !== undefined) {
+      if (s.stepIndex < choicesAt) step = scene.steps[s.stepIndex];
+      else if (s.stepIndex > choicesAt) step = scene.steps[s.stepIndex - 1];
+    } else {
+      step = scene.steps[s.stepIndex];
+    }
     if (!step) return s;
 
     if (step.type === "text") {
