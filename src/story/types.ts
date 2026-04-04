@@ -33,6 +33,12 @@ export type Scene = {
   id: string;
   steps: Step[];
   choices: Choice[];
+  /**
+   * choices가 표시되는 stepIndex.
+   * 정의된 경우 steps[choicesAt..] 는 선택지 이후에 실행되는 post-steps.
+   * undefined이면 기존 동작: stepIndex >= steps.length 일 때 choices 표시.
+   */
+  choicesAt?: number;
 };
 
 // ---------------------------------------------------------------------------
