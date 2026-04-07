@@ -40,7 +40,10 @@ test.describe("e2e: snapshots menu", () => {
     await page.getByRole("button", { name: "불러오기" }).click();
     await expect(page.getByRole("dialog", { name: "불러오기" })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "여행자는 하얀 길목에 서 있다." }),
+      page.getByRole("button", {
+        name: "여행자는 하얀 길목에 서 있다.",
+        exact: true,
+      }),
     ).toBeVisible();
     await page.getByRole("button", { name: "back-to-menu" }).click();
     await closeMenu(page);
@@ -56,7 +59,10 @@ test.describe("e2e: snapshots menu", () => {
     await openMenu(page);
     await page.getByRole("button", { name: "불러오기" }).click();
     await page
-      .getByRole("button", { name: "여행자는 하얀 길목에 서 있다." })
+      .getByRole("button", {
+        name: "여행자는 하얀 길목에 서 있다.",
+        exact: true,
+      })
       .click();
     // 불러오기 항목 클릭 시 GameMenu가 onLoad 뒤 메뉴 전체를 닫음 (close-menu 없음)
     await expect(page.getByRole("dialog", { name: "menu" })).not.toBeVisible();

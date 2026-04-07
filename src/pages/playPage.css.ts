@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { keyframes, style } from "@vanilla-extract/css";
 import { vars } from "../styles/theme.css";
 
 export const header = style({
@@ -90,6 +90,16 @@ export const logTriggerBar = style({
   zIndex: 10,
   display: "flex",
   justifyContent: "center",
+});
+
+const shake = keyframes({
+  "0%, 100%": { transform: "translateX(0)" },
+  "20%, 60%": { transform: "translateX(-6px)" },
+  "40%, 80%": { transform: "translateX(6px)" },
+});
+
+export const shakeActive = style({
+  animation: `${shake} 0.35s ease`,
 });
 
 export const actionButton = style({

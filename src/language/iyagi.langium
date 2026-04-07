@@ -7,11 +7,6 @@ grammar Iyagi
 terminal NL: /(\r?\n)/;
 terminal COMMENT: /\/\/[^\r\n]*/;
 
-terminal IND8: /        /;
-terminal IND6: /      /;
-terminal IND4: /    /;
-terminal IND2: /  /;
-
 hidden terminal WS: / +/; // spaces only (tabs are not skipped)
 
 terminal SIGNED_NUMBER: /-?\d+(\.\d+)?/;
@@ -45,7 +40,7 @@ VarsBlock:
   IgnoredTop*;
 
 VarLine:
-  IND2 name=ID '=' value=VarValue NL;
+  name=ID '=' value=VarValue NL;
 
 VarValue returns string:
     SIGNED_NUMBER
@@ -67,18 +62,28 @@ InlineScene:
 
 SceneItem:
     ChoiceBlock
+  | IfBlock
   | TextLine
   | ScriptLine;
+
+IfBlock:
+  'if' '(' cond=WhenExpr ')' '{' NL
+  thenItems+=ActionLine*
+  '}'
+  ('else' '{' NL
+  elseItems+=ActionLine*
+  '}')?
+  NL?;
 
 IgnoredLine returns string:
     NL
   | COMMENT NL;
 
 TextLine:
-  IND2 texts+=STRING+ NL;
+  texts+=STRING+ NL;
 
 ScriptLine:
-  IND2 head=ScriptHead tailTokens+=ScriptToken* NL;
+  head=ScriptHead tailTokens+=ScriptToken* NL;
 
 ScriptHead returns string:
     ID
@@ -114,11 +119,13 @@ ScriptToken returns string:
   | '.';
 
 ChoiceBlock:
-  IND2 'choices:' NL
-  choices+=ChoiceLine*;
+  'choices:' NL?
+  '{' NL?
+  choices+=ChoiceLine*
+  '}' NL?;
 
 ChoiceLine:
-  IND4 (IfChoice | PlainChoice);
+  (IfChoice | PlainChoice);
 
 IfChoice:
   'if' '(' cond=WhenExpr ')' text=STRING '->' action=ChoiceAction NL?;
@@ -146,33 +153,23 @@ WhenToken returns string:
 
 ChoiceAction:
     InlineAction
-  | BlockActionSameLine
-  | BlockActionNextLine;
+  | BlockAction;
 
 InlineAction:
   '{' codeTokens+=ScriptToken* '}';
 
-BlockActionSameLine:
+BlockAction:
+  NL?
   '{' NL
-  block=ActionBlockSameLine;
+  lines+=ActionLine*
+  '}';
 
-BlockActionNextLine:
-  NL
-  IND6 '{' NL
-  block=ActionBlockNextLine;
+ActionLine:
+    ActionTextLine
+  | ActionScriptLine;
 
-ActionBlockSameLine:
-  lines+=ActionLine6*
-  IND4 '}' NL?;
+ActionTextLine:
+  texts+=STRING+ NL;
 
-ActionLine6:
-  IND6 codeTokens+=ScriptToken+ NL;
-
-ActionBlockNextLine:
-  lines+=ActionLine8*
-  IND6 '}' NL?;
-
-ActionLine8:
-  IND8 codeTokens+=ScriptToken+ NL;
-
-
+ActionScriptLine:
+  head=ScriptHead tailTokens+=ScriptToken* NL;

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ActionContext } from "../actions/context";
 import { createActions, runScript } from "../actions/index";
 import type { VarDef } from "../story/types";
@@ -62,6 +62,31 @@ describe("createActions + runScript", () => {
     expect(typeof a.heal).toBe("function");
     expect(typeof a.jump).toBe("function");
     expect(typeof a.addGold).toBe("function");
+  });
+
+  describe("rollAttack", () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it("random < chance → damage 적용", () => {
+      vi.spyOn(Math, "random").mockReturnValue(0); // 0 < 0.7 → hit
+      const { ctx, get } = mockContext({ enemyHp: 10 });
+      runScript('rollAttack(0.7, 2, "enemyHp")', { ...ctx.vars }, ctx);
+      expect(get().enemyHp).toBe(8);
+    });
+
+    it("random >= chance → damage 미적용", () => {
+      vi.spyOn(Math, "random").mockReturnValue(0.9); // 0.9 >= 0.7 → miss
+      const { ctx, get } = mockContext({ enemyHp: 10 });
+      runScript('rollAttack(0.7, 2, "enemyHp")', { ...ctx.vars }, ctx);
+      expect(get().enemyHp).toBe(10);
+    });
+
+    it("hp 대상으로도 동작", () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      const { ctx, get } = mockContext({ hp: 5 });
+      runScript('rollAttack(0.7, 1, "hp")', { ...ctx.vars }, ctx);
+      expect(get().hp).toBe(4);
+    });
   });
 
   it("varDefs 기반 자동 헬퍼(add/sub/set/toggle)가 vars를 갱신", () => {

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { parseDSL } from "../parser/parseScene";
 import { evalWhen } from "../story/evalWhen";
@@ -18,13 +18,9 @@ function demoStorySource(): string {
   return readFileSync(join(__dirname, "../scenarios/demo.iyagi"), "utf-8");
 }
 
-function getScene(story: Story, sceneId: string) {
-  return story.scenes[sceneId] ?? { id: sceneId, steps: [], choices: [] };
-}
-
-function isDoneInScene(story: Story, s: StoryEngineState) {
-  const scene = getScene(story, s.sceneId);
-  return s.stepIndex >= scene.steps.length;
+function isDoneInScene(_story: Story, s: StoryEngineState) {
+  if (s.stepQueue.length === 0) return true;
+  return s.stepQueue[0]?.type === "choices";
 }
 
 function tickUntilDone(story: Story, s0: StoryEngineState): StoryEngineState {
@@ -32,20 +28,22 @@ function tickUntilDone(story: Story, s0: StoryEngineState): StoryEngineState {
   const maxTicks = 5000;
   for (let i = 0; i < maxTicks; i++) {
     if (isDoneInScene(story, s)) return s;
-    const scene = getScene(story, s.sceneId);
-    const step = scene.steps[s.stepIndex];
+    const step = s.stepQueue[0];
     if (!step) return s;
 
     if (step.type === "text") {
       s = storyReducer(s, { type: "TAP_ADVANCE" }, story);
       continue;
     }
-
-    s = applyStoryEvent(
-      s,
-      { type: "RUN_SCRIPT", context: "step", code: step.code },
-      story,
-    );
+    if (step.type === "script") {
+      s = applyStoryEvent(s, { type: "RUN_SCRIPT", code: step.code }, story);
+      continue;
+    }
+    if (step.type === "conditional") {
+      s = applyStoryEvent(s, { type: "EVAL_CONDITIONAL" }, story);
+      continue;
+    }
+    return s;
   }
   throw new Error("tickUntilDone: maxTicks exceeded (possible infinite loop)");
 }
@@ -60,8 +58,10 @@ function chooseByText(
   choiceText: string,
 ): StoryEngineState {
   let s = tickUntilDone(story, s0);
-  const scene = getScene(story, s.sceneId);
-  const choice = scene.choices.find((c) => c.text === choiceText);
+  const choicesStep = s.stepQueue[0];
+  if (!choicesStep || choicesStep.type !== "choices")
+    throw new Error(`not at choices step in scene ${s.sceneId}`);
+  const choice = choicesStep.choices.find((c) => c.text === choiceText);
   if (!choice) throw new Error(`choice not found: ${choiceText}`);
   expect(enabledChoice(choice, s.vars)).toBe(true);
 
@@ -69,16 +69,23 @@ function chooseByText(
   return s;
 }
 
-function expectAtDoneScene(story: Story, s: StoryEngineState, sceneId: string) {
+function expectAtDoneScene(
+  _story: Story,
+  s: StoryEngineState,
+  sceneId: string,
+) {
   expect(s.sceneId).toBe(sceneId);
-  const scene = getScene(story, sceneId);
-  expect(s.stepIndex).toBeGreaterThanOrEqual(scene.steps.length);
+  // "done" = empty queue or waiting at a choices step
+  const done = s.stepQueue.length === 0 || s.stepQueue[0]?.type === "choices";
+  expect(done).toBe(true);
 }
 
 describe("e2e endings (engine simulation)", () => {
   const parsed = parseDSL(demoStorySource(), { start: "start" });
   expect(parsed.errors).toEqual([]);
   const story = parsed.story;
+
+  afterEach(() => vi.restoreAllMocks());
 
   it("village -> healer: heal(5)로 hp가 증가", () => {
     let s = initialEngineState(story);
@@ -96,19 +103,27 @@ describe("e2e endings (engine simulation)", () => {
   });
 
   it("scene start -> going_home 엔딩", () => {
+    // 전투에서 항상 히트: 플레이어 2dmg, 적 1dmg
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
     let s = initialEngineState(story);
-    s = chooseByText(story, s, "숲으로 들어간다"); // hp -1=9, jump forest
-    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=7, jump deep
-    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, jump after_gold
-    // after_gold 스텝: subHp(2) → hp=5
-    s = chooseByText(story, s, "마을로 돌아가자"); // jump village
-    s = chooseByText(story, s, "빵을 산다"); // gold -1=9, hp +2=7, jump going_home
+    s = chooseByText(story, s, "숲으로 들어간다"); // hp 10→9
+    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp 9→7
+    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, → after_gold → battle
+    // battle: hp=7, enemyHp=10, 항상 히트
+    // 5라운드: enemyHp 10→8→6→4→2→0, hp 7→6→5→4→3→2
+    for (let i = 0; i < 5; i++) {
+      s = chooseByText(story, s, "전투하기");
+    }
+    // battle 재진입: enemyHp=0 → battle_win
+    s = chooseByText(story, s, "마을로 돌아가자"); // battle_win → village
+    s = chooseByText(story, s, "빵을 산다"); // gold 10→9, hp 2+2=4, → going_home
 
     s = tickUntilDone(story, s);
     expectAtDoneScene(story, s, "going_home");
 
-    expect(s.vars.hp).toBe(7);
-    expect(s.vars.gold).toBe(9);
+    expect(s.vars.hp).toBe(4);
+    expect(s.vars.gold).toBe(19); // after_gold(+10) + battle_win(+10) - bread(-1)
   });
 
   it("scene start -> ending 엔딩", () => {
@@ -125,24 +140,24 @@ describe("e2e endings (engine simulation)", () => {
   });
 
   it("scene start -> gameover 엔딩", () => {
+    // 플레이어 항상 미스(0.8 ≥ 0.7), 적 항상 히트(0.0 < 0.7) 교대
+    let callCount = 0;
+    vi.spyOn(Math, "random").mockImplementation(() =>
+      callCount++ % 2 === 0 ? 0.8 : 0.0,
+    );
+
     let s = initialEngineState(story);
-
-    // 사이클 1: 숲(-1)→deep(-2)→after_gold(-2)→village→start (hp: 10→5, gold: 10)
-    s = chooseByText(story, s, "숲으로 들어간다"); // hp -1=9
-    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=7
-    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, → after_gold (subHp -2 → hp=5)
-    s = chooseByText(story, s, "마을로 돌아가자"); // → village
-    s = chooseByText(story, s, "다시 길로 나온다"); // → start
-
-    // 사이클 2: 숲(-1)→deep(-2)→after_gold(-2) → hp=0 → gameover 자동 점프
-    s = chooseByText(story, s, "숲으로 들어간다"); // hp -1=4
-    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp -2=2
-    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10=20, → after_gold
-    // after_gold 스텝: subHp(2)→hp=0 → if(hp<=0) jump("gameover")
-    s = tickUntilDone(story, s);
+    s = chooseByText(story, s, "숲으로 들어간다"); // hp 10→9
+    s = chooseByText(story, s, "더 깊이 들어간다 (HP-2)"); // hp 9→7
+    s = chooseByText(story, s, "금화를 챙긴다"); // gold +10, → after_gold → battle
+    // battle: hp=7, 적만 히트 → 7라운드 후 hp=0
+    for (let i = 0; i < 7; i++) {
+      s = chooseByText(story, s, "전투하기");
+    }
+    s = tickUntilDone(story, s); // battle 재진입: hp=0 → gameover
     expectAtDoneScene(story, s, "gameover");
 
     expect(s.vars.hp).toBe(0);
-    expect(s.vars.gold).toBe(20);
+    expect(s.vars.gold).toBe(10);
   });
 });

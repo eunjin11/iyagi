@@ -13,66 +13,105 @@ const tinyStory: Story = {
     a: {
       id: "a",
       steps: [{ type: "text", content: "hi" }],
-      choices: [],
     },
   },
 };
 
 describe("storyReducer", () => {
-  it("TAP_ADVANCE는 텍스트 스텝에서만 stepIndex 증가", () => {
+  it("TAP_ADVANCE는 텍스트 스텝을 큐에서 제거하고 pastTexts에 추가", () => {
     let s = initialEngineState(tinyStory);
+    expect(s.stepQueue).toHaveLength(1);
     s = storyReducer(s, { type: "TAP_ADVANCE" }, tinyStory);
-    expect(s.stepIndex).toBe(1);
+    expect(s.stepQueue).toHaveLength(0);
+    expect(s.pastTexts).toEqual(["hi"]);
+    // 큐가 비었으면 TAP_ADVANCE 무시
     s = storyReducer(s, { type: "TAP_ADVANCE" }, tinyStory);
-    expect(s.stepIndex).toBe(1);
+    expect(s.stepQueue).toHaveLength(0);
   });
 
-  it("SCRIPT_DONE + jump는 sceneId·stepIndex 리셋", () => {
-    let s = initialEngineState({
+  it("SCRIPT_DONE + jump는 sceneId·stepQueue 리셋", () => {
+    const story: Story = {
       ...tinyStory,
       scenes: {
-        a: { id: "a", steps: [], choices: [] },
-        b: { id: "b", steps: [], choices: [] },
+        a: { id: "a", steps: [] },
+        b: { id: "b", steps: [{ type: "text", content: "bye" }] },
       },
-    });
-    s = { ...s, sceneId: "a", stepIndex: 2 };
+    };
+    let s = initialEngineState(story);
     s = storyReducer(
       s,
-      { type: "SCRIPT_DONE", context: "step", vars: { gold: 1 }, jumpTo: "b" },
-      tinyStory,
+      { type: "SCRIPT_DONE", vars: { gold: 1 }, localVars: {}, jumpTo: "b" },
+      story,
     );
     expect(s.sceneId).toBe("b");
-    expect(s.stepIndex).toBe(0);
+    expect(s.stepQueue).toEqual([{ type: "text", content: "bye" }]);
+    expect(s.pastTexts).toEqual([]);
     expect(s.vars.gold).toBe(1);
   });
 
-  it("SCRIPT_DONE step + jump 없음이면 stepIndex만 증가", () => {
-    let s = initialEngineState(tinyStory);
-    s = { ...s, stepIndex: 0 };
+  it("SCRIPT_DONE jump 없음이면 stepQueue 앞 제거", () => {
+    const story: Story = {
+      ...tinyStory,
+      scenes: {
+        a: {
+          id: "a",
+          steps: [
+            { type: "script", code: "inc" },
+            { type: "text", content: "hi" },
+          ],
+        },
+      },
+    };
+    let s = initialEngineState(story);
     s = storyReducer(
       s,
-      { type: "SCRIPT_DONE", context: "step", vars: { hp: 5 }, jumpTo: null },
-      tinyStory,
+      { type: "SCRIPT_DONE", vars: { hp: 5 }, localVars: {}, jumpTo: null },
+      story,
     );
-    expect(s.stepIndex).toBe(1);
+    expect(s.stepQueue).toEqual([{ type: "text", content: "hi" }]);
     expect(s.vars.hp).toBe(5);
   });
 
-  it("SCRIPT_DONE choice + jump 없음은 vars만 갱신", () => {
-    let s = initialEngineState(tinyStory);
-    s = { ...s, stepIndex: 99 };
-    s = storyReducer(
-      s,
-      {
-        type: "SCRIPT_DONE",
-        context: "choice",
-        vars: { x: true },
-        jumpTo: null,
+  it("CHOOSE는 choice.steps를 큐 앞에 주입(choices 스텝 대체)", () => {
+    const story: Story = {
+      title: "t",
+      start: "a",
+      scenes: {
+        a: {
+          id: "a",
+          steps: [
+            {
+              type: "choices",
+              choices: [
+                {
+                  text: "go",
+                  steps: [
+                    { type: "text", content: "중간" },
+                    { type: "script", code: 'jump("b")' },
+                  ],
+                },
+              ],
+            },
+            { type: "text", content: "after" },
+          ],
+        },
+        b: { id: "b", steps: [] },
       },
-      tinyStory,
+    };
+    let s = initialEngineState(story);
+    const choice = story.scenes.a?.steps[0] as Extract<
+      (typeof story.scenes.a.steps)[0],
+      { type: "choices" }
+    >;
+    s = applyStoryEvent(
+      s,
+      { type: "CHOOSE", choice: choice.choices[0] },
+      story,
     );
-    expect(s.stepIndex).toBe(99);
-    expect(s.vars.x).toBe(true);
+    // choices 스텝이 choice.steps로 교체되고 "after" 스텝은 유지
+    expect(s.stepQueue[0]).toEqual({ type: "text", content: "중간" });
+    expect(s.stepQueue[1]).toEqual({ type: "script", code: 'jump("b")' });
+    expect(s.stepQueue[2]).toEqual({ type: "text", content: "after" });
   });
 });
 
@@ -87,9 +126,8 @@ const afterFruitLike: Story = {
         { type: "text", content: "열매 대사" },
         { type: "script", code: 'inc("hp", 1)' },
       ],
-      choices: [],
     },
-    gameover: { id: "gameover", steps: [], choices: [] },
+    gameover: { id: "gameover", steps: [] },
   },
   init: { hp: 10, gold: 0 },
 };
@@ -101,30 +139,25 @@ describe("applyStoryEvent + RUN_SCRIPT", () => {
       s,
       {
         type: "RUN_SCRIPT",
-        context: "step",
         code: 'if (hp <= 0) jump("gameover")',
       },
       afterFruitLike,
     );
-    expect(s.stepIndex).toBe(1);
+    // 스크립트 pop → 텍스트가 큐 앞
+    expect(s.stepQueue[0]).toEqual({ type: "text", content: "열매 대사" });
     expect(s.sceneId).toBe("after_fruit");
     expect(s.vars.hp).toBe(10);
 
     s = storyReducer(s, { type: "TAP_ADVANCE" }, afterFruitLike);
-    expect(s.stepIndex).toBe(2);
+    expect(s.stepQueue[0]).toEqual({ type: "script", code: 'inc("hp", 1)' });
 
     s = applyStoryEvent(
       s,
-      { type: "RUN_SCRIPT", context: "step", code: 'inc("hp", 1)' },
+      { type: "RUN_SCRIPT", code: 'inc("hp", 1)' },
       afterFruitLike,
     );
     expect(s.vars.hp).toBe(11);
-    expect(s.stepIndex).toBe(3);
-
-    const scene = afterFruitLike.scenes.after_fruit;
-    expect(scene).toBeDefined();
-    if (!scene) throw new Error('scene "after_fruit" not found');
-    expect(s.stepIndex).toBeGreaterThanOrEqual(scene.steps.length);
+    expect(s.stepQueue).toHaveLength(0);
   });
 
   it("RUN_SCRIPT가 jump면 SCRIPT_DONE과 동일하게 씬 이동", () => {
@@ -134,12 +167,11 @@ describe("applyStoryEvent + RUN_SCRIPT", () => {
       s,
       {
         type: "RUN_SCRIPT",
-        context: "step",
         code: 'if (hp <= 0) jump("gameover")',
       },
       afterFruitLike,
     );
     expect(s.sceneId).toBe("gameover");
-    expect(s.stepIndex).toBe(0);
+    expect(s.stepQueue).toHaveLength(0);
   });
 });

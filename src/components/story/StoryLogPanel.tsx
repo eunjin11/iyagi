@@ -55,7 +55,7 @@ export const StoryLogPanel = ({ storyLog, isDev, interpolate }: Props) => {
                     ? `text|${entry.sceneId}|${entry.content}`
                     : entry.kind === "script"
                       ? `script|${entry.sceneId}|${entry.code}`
-                      : `choice|${entry.sceneId}|${entry.text}|${entry.script}`;
+                      : `choice|${entry.sceneId}|${entry.text}`;
               return (
                 <div key={entryKey} style={{ marginBottom: "0.65em" }}>
                   {entry.kind === "enterScene" && (
@@ -102,21 +102,6 @@ export const StoryLogPanel = ({ storyLog, isDev, interpolate }: Props) => {
                       <strong>선택</strong> ·{" "}
                       <code style={{ opacity: 0.6 }}>{entry.sceneId}</code>
                       <div style={{ marginTop: 4 }}>「{entry.text}」</div>
-                      {isDev && (
-                        <pre
-                          style={{
-                            margin: "6px 0 0",
-                            padding: "8px 10px",
-                            background: "rgba(255,255,255,0.08)",
-                            borderRadius: 6,
-                            fontSize: 12,
-                            whiteSpace: "pre-wrap",
-                            wordBreak: "break-word",
-                          }}
-                        >
-                          {entry.script}
-                        </pre>
-                      )}
                     </div>
                   )}
                 </div>

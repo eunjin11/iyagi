@@ -4,8 +4,8 @@ const MULTILINE_STATEMENT_COUNT = 2;
 
 const INDENT_SCENE = "  "; // 2 spaces
 const INDENT_CHOICES = "    "; // 4 spaces
-const INDENT_ACTION_BRACE = "      "; // 6 spaces (choices indent + 2)
-const INDENT_ACTION_INNER = "        "; // 8 spaces (choices indent + 4)
+const INDENT_ACTION_BRACE = "    "; // 4 spaces (= choices indent)
+const INDENT_ACTION_INNER = "      "; // 6 spaces (choices indent + 2)
 
 function trimTrailingSemicolon(stmt) {
   return stmt.replace(/;\s*$/, "").trim();
@@ -256,8 +256,19 @@ function formatFile(src) {
 
     // inside scenes
     if (trimmed === "}") {
+      if (inChoices && raw.startsWith(" ")) {
+        // 들여쓴 `}` → choices 블록 닫기
+        inChoices = false;
+        out.push(`${INDENT_SCENE}}`);
+        i++;
+        continue;
+      }
+      // 들여쓰지 않은 `}` → scene 닫기 (old format 대응: choices도 같이 닫음)
+      if (inChoices) {
+        out.push(`${INDENT_SCENE}}`);
+        inChoices = false;
+      }
       inScene = false;
-      inChoices = false;
       out.push("}");
       i++;
       continue;
@@ -272,9 +283,15 @@ function formatFile(src) {
       i++;
       continue;
     }
-    if (trimmed === "choices:") {
+    if (/^choices:\s*\{?\s*$/.test(trimmed)) {
       inChoices = true;
-      out.push(`${INDENT_SCENE}choices:`);
+      out.push(`${INDENT_SCENE}choices: {`);
+      // If no `{` on this line, peek at the next non-empty line for a standalone `{`
+      if (!trimmed.includes("{")) {
+        let j = i + 1;
+        while (j < lines.length && lines[j].trim() === "") j++;
+        if (j < lines.length && lines[j].trim() === "{") i = j;
+      }
       i++;
       continue;
     }
@@ -428,28 +445,40 @@ function formatFile(src) {
         const openTrim = lines[j].trim();
 
         if (openTrim === "{") {
-          // collect until matching `}`
+          // collect until matching `}`, preserving text lines (quoted strings)
           j++;
-          const bodyLines = [];
+          const actionItems = [];
           while (j < lines.length) {
             const innerTrim = lines[j].trim();
             if (innerTrim === "}") break;
             if (innerTrim !== "" && !innerTrim.startsWith("//")) {
-              bodyLines.push(innerTrim);
+              if (innerTrim.startsWith('"')) {
+                actionItems.push(innerTrim); // text line: keep as-is with quotes
+              } else {
+                for (const stmt of splitActionStatements(innerTrim)) {
+                  actionItems.push(stmt);
+                }
+              }
             }
             j++;
-          }
-          const joined = bodyLines.join("\n").trim();
-          const stmts = splitActionStatements(joined);
-          if (stmts.length === 1) {
-            out.push(`${INDENT_CHOICES}"${text}" -> { ${stmts[0]} }`);
-          } else {
-            out.push(`${INDENT_CHOICES}"${text}" ->`);
-            out.push(...formatMultilineAction(stmts));
           }
           // skip closing `}`
           while (j < lines.length && lines[j].trim() !== "}") j++;
           if (j < lines.length) j++;
+
+          const hasText = actionItems.some((item) => item.startsWith('"'));
+          if (!hasText && actionItems.length === 1) {
+            const inlineLine = `${INDENT_CHOICES}"${text}" -> { ${actionItems[0]} }`;
+            if (inlineLine.length <= MULTILINE_LINE_LEN) {
+              out.push(inlineLine);
+            } else {
+              out.push(`${INDENT_CHOICES}"${text}" ->`);
+              out.push(...formatMultilineAction(actionItems));
+            }
+          } else {
+            out.push(`${INDENT_CHOICES}"${text}" ->`);
+            out.push(...formatMultilineAction(actionItems));
+          }
           i = j;
           continue;
         }
@@ -479,9 +508,8 @@ function formatFile(src) {
         continue;
       }
 
-      // not a recognized choice line: end choices section for formatting
-      inChoices = false;
-      out.push(`${INDENT_SCENE}${trimmed}`);
+      // unrecognized content inside choices block: keep at choices indent
+      out.push(`${INDENT_CHOICES}${trimmed}`);
       i++;
       continue;
     }
@@ -494,6 +522,58 @@ function formatFile(src) {
         out.push(`${INDENT_SCENE}${q}`);
       }
       i++;
+      continue;
+    }
+
+    // --- IfBlock: if (cond) { ... } [else { ... }] ---
+    const ifBlockMulti = /^if\s*\((.+)\)\s*\{\s*$/.exec(trimmed);
+    if (ifBlockMulti) {
+      const cond = ifBlockMulti[1].trim();
+      const thenLines = [];
+      let j = i + 1;
+
+      // then-body 수집: `}` 또는 `} else {` 까지
+      while (j < lines.length) {
+        const t = lines[j].trim();
+        if (t === "}" || /^\}\s*else\s*\{/.test(t)) break;
+        if (t !== "") thenLines.push(t);
+        j++;
+      }
+
+      const elseLines = [];
+      let hasElse = false;
+
+      if (j < lines.length) {
+        const closeTrim = lines[j].trim();
+        if (/^\}\s*else\s*\{/.test(closeTrim)) {
+          hasElse = true;
+          j++;
+          // else-body 수집
+          while (j < lines.length) {
+            const t = lines[j].trim();
+            if (t === "}") break;
+            if (t !== "") elseLines.push(t);
+            j++;
+          }
+          j++; // closing `}` of else
+        } else if (closeTrim === "}") {
+          j++; // closing `}` of if
+        }
+      }
+
+      out.push(`${INDENT_SCENE}if (${cond}) {`);
+      for (const line of thenLines) {
+        out.push(`${INDENT_CHOICES}${line}`);
+      }
+      if (hasElse) {
+        out.push(`${INDENT_SCENE}} else {`);
+        for (const line of elseLines) {
+          out.push(`${INDENT_CHOICES}${line}`);
+        }
+      }
+      out.push(`${INDENT_SCENE}}`);
+
+      i = j;
       continue;
     }
 

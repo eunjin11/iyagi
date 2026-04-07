@@ -106,17 +106,48 @@ export type Actions = CustomActions & BuiltInActions;
  * DSL script 코드를 vars + actions 스코프에서 실행한다.
  * jump()는 ctx.navigate를 호출한다.
  */
+/**
+ * `const x = expr` / `let x = expr` → `__local__.x = (expr)`
+ * 이미 localVars에 있는 키에 대한 bare 대입(`x = expr`)도 같이 변환한다.
+ * 단, 프로퍼티 접근(`obj.x =`)이나 비교 연산(`x == ...`)은 변환하지 않는다.
+ */
+function transformLocalDecls(
+  code: string,
+  existingLocalKeys: string[],
+): string {
+  // 1) const/let 선언 변환
+  let result = code.replace(
+    /\b(?:const|let)\s+([a-zA-Z_$][\w$]*)\s*=/g,
+    (_, name) => `__local__.${name} =`,
+  );
+  // 2) 이미 선언된 로컬 키에 대한 bare 재할당 변환
+  //    앞에 `.` 또는 `\w`가 없는 단독 식별자의 `=` (비교 연산 `==` 제외)
+  for (const key of existingLocalKeys) {
+    result = result.replace(
+      new RegExp(`(?<![.\\w])\\b${key}\\s*=(?!=)`, "g"),
+      `__local__.${key} =`,
+    );
+  }
+  return result;
+}
+
 export function runScript(
   code: string,
   vars: VariableBag,
   ctx: ActionContext,
   varDefs?: VarDef[],
+  localVars?: VariableBag,
 ): void {
   const actions = createActions(ctx, varDefs);
+  const local = localVars ?? {};
 
-  const keys = [...Object.keys(vars), ...Object.keys(actions)];
-  const values = [...Object.values(vars), ...Object.values(actions)];
+  // 이전 스텝에서 선언된 로컬 변수를 읽을 수 있도록 병합 (local 우선)
+  const readVars = { ...vars, ...local };
+  const transformed = transformLocalDecls(code, Object.keys(local));
 
-  const fn = new Function(...keys, code);
+  const keys = [...Object.keys(readVars), ...Object.keys(actions), "__local__"];
+  const values = [...Object.values(readVars), ...Object.values(actions), local];
+
+  const fn = new Function(...keys, transformed);
   fn(...values);
 }

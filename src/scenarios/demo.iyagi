@@ -3,34 +3,37 @@ title: "여행"
 vars:
   hp = 10
   gold = 0
+  enemyHp = 10
 
 start {
   "여행자는 하얀 길목에 서 있다."
   "바람이 불고, 두 갈래 길이 앞에 펼쳐진다."
-  choices:
+  choices: {
     "숲으로 들어간다" ->
-      {
-        dec("hp", 1)
-        jump("forest")
-      }
+    {
+      dec("hp", 1)
+      jump("forest")
+    }
     "마을로 향한다" -> { jump("village") }
+  }
 }
 
 forest {
   if (hp <= 0) jump("gameover")
   "숲은 조용하다. 나뭇잎이 속삭인다."
   "어둠 속에 뭔가 빛나는 게 보인다."
-  choices:
+  choices: {
     "열매를 따서 먹는다 (HP+1)" ->
-      {
-        addHp(1)
-        jump("after_fruit")
-      }
+    {
+      addHp(1)
+      jump("after_fruit")
+    }
     "더 깊이 들어간다 (HP-2)" ->
-      {
-        subHp(2)
-        jump("deep")
-      }
+    {
+      subHp(2)
+      jump("deep")
+    }
+  }
 }
 
 after_fruit {
@@ -43,56 +46,90 @@ deep {
   if (hp <= 0) jump("gameover")
   "어둠 속에서 금빛이 번뜩인다."
   "금화 10개가 나뒹굴고 있다."
-  choices:
+  choices: {
     "금화를 챙긴다" ->
-      {
-        inc("gold", 10)
-        jump("after_gold")
-      }
+    {
+      inc("gold", 10)
+      jump("after_gold")
+    }
     "도망친다" ->
-      {
-        set("hp", 5)
-        jump("after_run")
-      }
+    {
+      set("hp", 5)
+      jump("after_run")
+    }
+  }
 }
 
 after_gold {
   "금화를 챙겼다."
-  "잠복 중이던 괴한에게 습격당했다."
-  subHp(2)
+  "잠복 중이던 괴한이 앞을 막아선다!"
+  setEnemyHp(10)
+  jump("battle")
+}
+
+battle {
   if (hp <= 0) jump("gameover")
-  choices:
+  if (enemyHp <= 0) jump("battle_win")
+  "괴한과 대치 중이다."
+  "내 HP: $hp | 괴한 HP: $enemyHp"
+  choices: {
+    "전투하기" -> { const hit = rollAttack(0.7, 2, "enemyHp") }
+    "도망치기" -> { jump("after_run") }
+  }
+  if (hit) {
+    "공격에 성공했다!"
+  } else {
+    "공격에 실패했다!"
+  }
+  hit = rollAttack(0.7, 1, "hp")
+  if (hit) {
+    "괴한의 공격이 명중했다!"
+  } else {
+    "괴한의 공격을 피했다!"
+  }
+  jump("battle")
+}
+
+battle_win {
+  "괴한을 물리쳤다!"
+  addGold(10)
+  "금화 10개를 품에 안고, 마을로 돌아간다."
+  choices: {
     "마을로 돌아가자" -> { jump("village") }
+  }
 }
 
 after_run {
   "도망쳤다."
   "길에 떨어져 있는 돈은 줍는 게 아니다."
-  choices:
+  choices: {
     "마을로 돌아가자" -> { jump("village") }
+  }
 }
 
 village {
   "마을은 평화롭다. 장터가 북적인다."
   "빵집에서 고소한 냄새가 풍긴다."
-  choices:
+  choices: {
     if (gold >= 1) "빵을 산다" ->
-      {
-        dec("gold", 1)
-        inc("hp", 2)
-        jump("going_home")
-      }
+    {
+      dec("gold", 1)
+      inc("hp", 2)
+      jump("going_home")
+    }
     "치유사에게 간다" -> { jump("healer") }
     "다시 길로 나온다" -> { jump("start") }
     "여행을 마치고 집으로 돌아간다" -> { jump("ending") }
+  }
 }
 
 healer {
   "치유사는 조용히 손을 얹는다."
   heal(5)
   "상처가 아물고 숨이 편안해진다. (HP+5)"
-  choices:
+  choices: {
     "마을로 돌아간다" -> { jump("village") }
+  }
 }
 
 going_home {

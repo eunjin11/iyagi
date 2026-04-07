@@ -13,7 +13,7 @@
     },
     {
       "name": "keyword.section.choices.iyagi",
-      "match": "^\\s*choices:\\s*$"
+      "match": "^\\s*choices:"
     },
     {
       "name": "entity.name.scene.iyagi",

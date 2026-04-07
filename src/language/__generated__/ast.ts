@@ -9,10 +9,6 @@ import * as langium from 'langium';
 export const iyagiTerminals = {
     NL: /(\r?\n)/,
     COMMENT: /\/\/[^\r\n]*/,
-    IND8: /        /,
-    IND6: /      /,
-    IND4: /    /,
-    IND2: /  /,
     WS: / +/,
     SIGNED_NUMBER: /-?\d+(\.\d+)?/,
     ID: /[a-zA-Z_][a-zA-Z0-9_]*/,
@@ -33,6 +29,7 @@ export type iyagiKeywordNames =
     | "."
     | "="
     | "choices:"
+    | "else"
     | "false"
     | "if"
     | "title:"
@@ -43,97 +40,64 @@ export type iyagiKeywordNames =
 
 export type iyagiTokenNames = iyagiTerminalNames | iyagiKeywordNames;
 
-export interface ActionBlockNextLine extends langium.AstNode {
-    readonly $container: BlockActionNextLine;
-    readonly $type: 'ActionBlockNextLine';
-    lines: Array<ActionLine8>;
+export type ActionLine = ActionScriptLine | ActionTextLine;
+
+export const ActionLine = {
+    $type: 'ActionLine'
+} as const;
+
+export function isActionLine(item: unknown): item is ActionLine {
+    return reflection.isInstance(item, ActionLine.$type);
 }
 
-export const ActionBlockNextLine = {
-    $type: 'ActionBlockNextLine',
+export interface ActionScriptLine extends langium.AstNode {
+    readonly $container: BlockAction | IfBlock;
+    readonly $type: 'ActionScriptLine';
+    head: ScriptHead;
+    tailTokens: Array<ScriptToken>;
+}
+
+export const ActionScriptLine = {
+    $type: 'ActionScriptLine',
+    head: 'head',
+    tailTokens: 'tailTokens'
+} as const;
+
+export function isActionScriptLine(item: unknown): item is ActionScriptLine {
+    return reflection.isInstance(item, ActionScriptLine.$type);
+}
+
+export interface ActionTextLine extends langium.AstNode {
+    readonly $container: BlockAction | IfBlock;
+    readonly $type: 'ActionTextLine';
+    texts: Array<string>;
+}
+
+export const ActionTextLine = {
+    $type: 'ActionTextLine',
+    texts: 'texts'
+} as const;
+
+export function isActionTextLine(item: unknown): item is ActionTextLine {
+    return reflection.isInstance(item, ActionTextLine.$type);
+}
+
+export interface BlockAction extends langium.AstNode {
+    readonly $container: IfChoice | PlainChoice;
+    readonly $type: 'BlockAction';
+    lines: Array<ActionLine>;
+}
+
+export const BlockAction = {
+    $type: 'BlockAction',
     lines: 'lines'
 } as const;
 
-export function isActionBlockNextLine(item: unknown): item is ActionBlockNextLine {
-    return reflection.isInstance(item, ActionBlockNextLine.$type);
+export function isBlockAction(item: unknown): item is BlockAction {
+    return reflection.isInstance(item, BlockAction.$type);
 }
 
-export interface ActionBlockSameLine extends langium.AstNode {
-    readonly $container: BlockActionSameLine;
-    readonly $type: 'ActionBlockSameLine';
-    lines: Array<ActionLine6>;
-}
-
-export const ActionBlockSameLine = {
-    $type: 'ActionBlockSameLine',
-    lines: 'lines'
-} as const;
-
-export function isActionBlockSameLine(item: unknown): item is ActionBlockSameLine {
-    return reflection.isInstance(item, ActionBlockSameLine.$type);
-}
-
-export interface ActionLine6 extends langium.AstNode {
-    readonly $container: ActionBlockSameLine;
-    readonly $type: 'ActionLine6';
-    codeTokens: Array<ScriptToken>;
-}
-
-export const ActionLine6 = {
-    $type: 'ActionLine6',
-    codeTokens: 'codeTokens'
-} as const;
-
-export function isActionLine6(item: unknown): item is ActionLine6 {
-    return reflection.isInstance(item, ActionLine6.$type);
-}
-
-export interface ActionLine8 extends langium.AstNode {
-    readonly $container: ActionBlockNextLine;
-    readonly $type: 'ActionLine8';
-    codeTokens: Array<ScriptToken>;
-}
-
-export const ActionLine8 = {
-    $type: 'ActionLine8',
-    codeTokens: 'codeTokens'
-} as const;
-
-export function isActionLine8(item: unknown): item is ActionLine8 {
-    return reflection.isInstance(item, ActionLine8.$type);
-}
-
-export interface BlockActionNextLine extends langium.AstNode {
-    readonly $container: IfChoice | PlainChoice;
-    readonly $type: 'BlockActionNextLine';
-    block: ActionBlockNextLine;
-}
-
-export const BlockActionNextLine = {
-    $type: 'BlockActionNextLine',
-    block: 'block'
-} as const;
-
-export function isBlockActionNextLine(item: unknown): item is BlockActionNextLine {
-    return reflection.isInstance(item, BlockActionNextLine.$type);
-}
-
-export interface BlockActionSameLine extends langium.AstNode {
-    readonly $container: IfChoice | PlainChoice;
-    readonly $type: 'BlockActionSameLine';
-    block: ActionBlockSameLine;
-}
-
-export const BlockActionSameLine = {
-    $type: 'BlockActionSameLine',
-    block: 'block'
-} as const;
-
-export function isBlockActionSameLine(item: unknown): item is BlockActionSameLine {
-    return reflection.isInstance(item, BlockActionSameLine.$type);
-}
-
-export type ChoiceAction = BlockActionNextLine | BlockActionSameLine | InlineAction;
+export type ChoiceAction = BlockAction | InlineAction;
 
 export const ChoiceAction = {
     $type: 'ChoiceAction'
@@ -182,6 +146,25 @@ export const Document = {
 
 export function isDocument(item: unknown): item is Document {
     return reflection.isInstance(item, Document.$type);
+}
+
+export interface IfBlock extends langium.AstNode {
+    readonly $container: MultiLineScene;
+    readonly $type: 'IfBlock';
+    cond: WhenExpr;
+    elseItems: Array<ActionLine>;
+    thenItems: Array<ActionLine>;
+}
+
+export const IfBlock = {
+    $type: 'IfBlock',
+    cond: 'cond',
+    elseItems: 'elseItems',
+    thenItems: 'thenItems'
+} as const;
+
+export function isIfBlock(item: unknown): item is IfBlock {
+    return reflection.isInstance(item, IfBlock.$type);
 }
 
 export interface IfChoice extends langium.AstNode {
@@ -291,7 +274,7 @@ export function isScene(item: unknown): item is Scene {
     return reflection.isInstance(item, Scene.$type);
 }
 
-export type SceneItem = ChoiceBlock | ScriptLine | TextLine;
+export type SceneItem = ChoiceBlock | IfBlock | ScriptLine | TextLine;
 
 export const SceneItem = {
     $type: 'SceneItem'
@@ -385,7 +368,7 @@ export function isVarValue(item: unknown): item is VarValue {
 }
 
 export interface WhenExpr extends langium.AstNode {
-    readonly $container: IfChoice;
+    readonly $container: IfBlock | IfChoice;
     readonly $type: 'WhenExpr';
     condTokens: Array<WhenToken>;
 }
@@ -406,16 +389,15 @@ export function isWhenToken(item: unknown): item is WhenToken {
 }
 
 export type iyagiAstType = {
-    ActionBlockNextLine: ActionBlockNextLine
-    ActionBlockSameLine: ActionBlockSameLine
-    ActionLine6: ActionLine6
-    ActionLine8: ActionLine8
-    BlockActionNextLine: BlockActionNextLine
-    BlockActionSameLine: BlockActionSameLine
+    ActionLine: ActionLine
+    ActionScriptLine: ActionScriptLine
+    ActionTextLine: ActionTextLine
+    BlockAction: BlockAction
     ChoiceAction: ChoiceAction
     ChoiceBlock: ChoiceBlock
     ChoiceLine: ChoiceLine
     Document: Document
+    IfBlock: IfBlock
     IfChoice: IfChoice
     InlineAction: InlineAction
     InlineScene: InlineScene
@@ -432,60 +414,41 @@ export type iyagiAstType = {
 
 export class iyagiAstReflection extends langium.AbstractAstReflection {
     override readonly types = {
-        ActionBlockNextLine: {
-            name: ActionBlockNextLine.$type,
+        ActionLine: {
+            name: ActionLine.$type,
+            properties: {
+            },
+            superTypes: []
+        },
+        ActionScriptLine: {
+            name: ActionScriptLine.$type,
+            properties: {
+                head: {
+                    name: ActionScriptLine.head
+                },
+                tailTokens: {
+                    name: ActionScriptLine.tailTokens,
+                    defaultValue: []
+                }
+            },
+            superTypes: [ActionLine.$type]
+        },
+        ActionTextLine: {
+            name: ActionTextLine.$type,
+            properties: {
+                texts: {
+                    name: ActionTextLine.texts,
+                    defaultValue: []
+                }
+            },
+            superTypes: [ActionLine.$type]
+        },
+        BlockAction: {
+            name: BlockAction.$type,
             properties: {
                 lines: {
-                    name: ActionBlockNextLine.lines,
+                    name: BlockAction.lines,
                     defaultValue: []
-                }
-            },
-            superTypes: []
-        },
-        ActionBlockSameLine: {
-            name: ActionBlockSameLine.$type,
-            properties: {
-                lines: {
-                    name: ActionBlockSameLine.lines,
-                    defaultValue: []
-                }
-            },
-            superTypes: []
-        },
-        ActionLine6: {
-            name: ActionLine6.$type,
-            properties: {
-                codeTokens: {
-                    name: ActionLine6.codeTokens,
-                    defaultValue: []
-                }
-            },
-            superTypes: []
-        },
-        ActionLine8: {
-            name: ActionLine8.$type,
-            properties: {
-                codeTokens: {
-                    name: ActionLine8.codeTokens,
-                    defaultValue: []
-                }
-            },
-            superTypes: []
-        },
-        BlockActionNextLine: {
-            name: BlockActionNextLine.$type,
-            properties: {
-                block: {
-                    name: BlockActionNextLine.block
-                }
-            },
-            superTypes: [ChoiceAction.$type]
-        },
-        BlockActionSameLine: {
-            name: BlockActionSameLine.$type,
-            properties: {
-                block: {
-                    name: BlockActionSameLine.block
                 }
             },
             superTypes: [ChoiceAction.$type]
@@ -524,6 +487,23 @@ export class iyagiAstReflection extends langium.AbstractAstReflection {
                 }
             },
             superTypes: []
+        },
+        IfBlock: {
+            name: IfBlock.$type,
+            properties: {
+                cond: {
+                    name: IfBlock.cond
+                },
+                elseItems: {
+                    name: IfBlock.elseItems,
+                    defaultValue: []
+                },
+                thenItems: {
+                    name: IfBlock.thenItems,
+                    defaultValue: []
+                }
+            },
+            superTypes: [SceneItem.$type]
         },
         IfChoice: {
             name: IfChoice.$type,

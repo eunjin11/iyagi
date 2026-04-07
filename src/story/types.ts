@@ -11,7 +11,9 @@ export type VarDef = {
 
 export type Step =
   | { type: "text"; content: string }
-  | { type: "script"; code: string };
+  | { type: "script"; code: string }
+  | { type: "choices"; choices: Choice[] }
+  | { type: "conditional"; cond: string; thenSteps: Step[]; elseSteps: Step[] };
 
 // ---------------------------------------------------------------------------
 // Choice
@@ -19,9 +21,8 @@ export type Step =
 
 export type Choice = {
   text: string;
-  /** 선택 시 실행할 JS 코드 (jump 포함) */
-  script: string;
-  /** 있으면 이 조건이 참일 때만 선택 가능(mathjs 식, `if (…) "…" -> …`에서 생성). */
+  steps: Step[];
+  /** 있으면 이 조건이 참일 때만 선택 가능. */
   enabledWhen?: string;
 };
 
@@ -32,7 +33,6 @@ export type Choice = {
 export type Scene = {
   id: string;
   steps: Step[];
-  choices: Choice[];
 };
 
 // ---------------------------------------------------------------------------

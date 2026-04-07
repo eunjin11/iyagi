@@ -6,32 +6,28 @@ const scenarioStories = import.meta.glob("../scenarios/*.iyagi", {
   import: "default",
 }) as Record<string, Story>;
 
-let resolved: Story | undefined;
-
-if (Object.keys(scenarioStories).length > 0) {
-  const entries = Object.entries(scenarioStories);
-  entries.sort(([a], [b]) => a.localeCompare(b));
-  resolved = entries[0]?.[1];
-}
-
-if (!resolved) {
-  resolved = {
-    title: "Demo",
-    start: "start",
-    init: {},
-    scenes: {
-      start: {
-        id: "start",
-        steps: [
-          {
-            type: "text",
-            content: "src/scenarios/ 에 .iyagi 파일을 추가하세요.",
-          },
-        ],
-        choices: [],
-      },
+const fallback: Story = {
+  title: "Demo",
+  start: "start",
+  init: {},
+  scenes: {
+    start: {
+      id: "start",
+      steps: [
+        {
+          type: "text",
+          content: "src/scenarios/ 에 .iyagi 파일을 추가하세요.",
+        },
+      ],
     },
-  };
+  },
+};
+
+function resolveStory(): Story {
+  const entries = Object.entries(scenarioStories);
+  if (entries.length === 0) return fallback;
+  entries.sort(([a], [b]) => a.localeCompare(b));
+  return entries[0]?.[1] ?? fallback;
 }
 
-export const currentStory: Story = resolved;
+export const currentStory: Story = resolveStory();

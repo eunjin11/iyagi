@@ -1,7 +1,6 @@
 import type { ParseResult } from "langium";
 import { EmptyFileSystem } from "langium";
 import type { Document as IyagiDocumentAst } from "./__generated__/ast.js";
-import { collectIndentationDiagnostics } from "./indentationDiagnostics.js";
 import { createIyagiServices } from "./services.js";
 
 const { Iyagi } = createIyagiServices(EmptyFileSystem);
@@ -41,9 +40,6 @@ export function parseIyagi(src: string): ParseIyagiResult {
   const parsed: ParseResult<IyagiDocumentAst> =
     Iyagi.parser.LangiumParser.parse(src);
   const errors: string[] = [
-    ...collectIndentationDiagnostics(src).map(
-      (d) => `L${d.line}:${d.col} ${d.message}`,
-    ),
     ...parsed.lexerErrors.map(formatChevrotainError),
     ...parsed.parserErrors.map(formatChevrotainError),
   ];
