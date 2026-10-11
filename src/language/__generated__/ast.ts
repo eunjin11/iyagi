@@ -382,10 +382,10 @@ export function isWhenExpr(item: unknown): item is WhenExpr {
     return reflection.isInstance(item, WhenExpr.$type);
 }
 
-export type WhenToken = '(' | ',' | '.' | '=' | 'false' | 'true' | string;
+export type WhenToken = string;
 
 export function isWhenToken(item: unknown): item is WhenToken {
-    return item === 'true' || item === 'false' || item === '=' || item === '(' || item === ',' || item === '.' || (typeof item === 'string' && (/[a-zA-Z_][a-zA-Z0-9_]*/.test(item) || /"([^"\\]|\\.)*"/.test(item) || /-?\d+(\.\d+)?/.test(item) || /<=/.test(item) || />=/.test(item) || /</.test(item) || />/.test(item)));
+    return typeof item === 'string';
 }
 
 export type iyagiAstType = {

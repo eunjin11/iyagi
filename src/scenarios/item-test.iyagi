@@ -1,0 +1,73 @@
+title: "아이템 테스트"
+
+vars:
+  hp = 3
+  gold = 0
+
+start {
+  "작은 상자가 놓인 방에 들어왔다."
+  "아이템 획득과 인벤토리 사용을 테스트할 수 있는 이야기다."
+  choices: {
+    "금화와 회복 물약을 챙긴다" ->
+    {
+      addGold(10)
+      addItem("test-gold-pouch", "금화 주머니", "💰", 1, "테스트용 금화 주머니.")
+      addItem("test-healing-potion", "회복 물약", "🧪", 1, "사용하면 체력을 3 회복한다.", "heal(3)")
+      jump("inventory")
+    }
+    "열쇠 조건을 테스트한다" -> { jump("key_test") }
+    "그냥 나간다" -> { jump("ending") }
+  }
+}
+
+inventory {
+  "금화와 회복 물약을 챙겼다."
+  "메뉴를 열어 인벤토리 아이템을 확인하고, 회복 물약의 사용과 버리기를 테스트해 보자."
+  choices: {
+    "회복 물약을 하나 더 챙긴다" ->
+    {
+      addItem("test-healing-potion", "회복 물약", "🧪", 1, "사용하면 체력을 3 회복한다.", "heal(3)")
+      jump("inventory")
+    }
+    "열쇠 조건을 테스트한다" -> { jump("key_test") }
+    "테스트를 끝낸다" -> { jump("ending") }
+  }
+}
+
+ending {
+  "아이템 테스트를 종료했다."
+  "현재 HP: $hp / 금화: $gold"
+}
+
+key_test {
+  if (hasItem("key")) {
+    "열쇠 보유 검사: true"
+    "열쇠가 있다. 잠긴 문을 열 수 있다."
+  } else {
+    "열쇠 보유 검사: false"
+    "열쇠가 없다. 먼저 열쇠를 챙기자."
+  }
+  choices: {
+    if (not hasItem("key")) "열쇠를 챙긴다" ->
+    {
+      addItem("key", "낡은 열쇠", "🔑", 1, "잠긴 문을 열 수 있는 테스트용 열쇠.")
+      jump("key_test")
+    }
+    if (hasItem("key")) "열쇠로 문을 연다" -> { jump("key_opened") }
+    if (hasItem("key")) "열쇠를 버린다" ->
+    {
+      removeItem("key")
+      jump("key_test")
+    }
+    "열쇠 보유 상태를 다시 확인한다" -> { jump("key_test") }
+    "테스트를 끝낸다" -> { jump("ending") }
+  }
+}
+
+key_opened {
+  "열쇠로 잠긴 문을 열었다."
+  choices: {
+    "열쇠 테스트로 돌아간다" -> { jump("key_test") }
+    "테스트를 끝낸다" -> { jump("ending") }
+  }
+}

@@ -1,5 +1,15 @@
 export type VariableBag = Record<string, number | string | boolean>;
 
+export type InventoryItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  icon?: string;
+  description?: string;
+  /** 사용 시 스토리 엔진에서 실행할 iyagi 코드. */
+  useAction?: string;
+};
+
 export type VarDef = {
   name: string;
   init: number | string | boolean;

@@ -25,10 +25,13 @@ const PlayPage = ({ story, storyId, resumeState = null, onGoHome }: Props) => {
     isDone,
     choices,
     vars,
-    localVars,
+    inventory,
     storyLog,
     advance,
     choose,
+    canChoose,
+    useItem,
+    dropItem,
   } = play;
   const { save, listSaves, load, deleteSave } = saves;
 
@@ -65,6 +68,9 @@ const PlayPage = ({ story, storyId, resumeState = null, onGoHome }: Props) => {
           listSaves={listSaves}
           onLoad={load}
           onDeleteSave={deleteSave}
+          inventory={inventory}
+          onUseItem={useItem}
+          onDropItem={dropItem}
         />
       </header>
 
@@ -81,7 +87,7 @@ const PlayPage = ({ story, storyId, resumeState = null, onGoHome }: Props) => {
         <div className={css.choiceSlot}>
           <ChoiceList
             choices={choices}
-            vars={{ ...vars, ...localVars }}
+            canChoose={canChoose}
             onChoose={choose}
             className={css.actionRow}
             buttonClassName={css.actionButton}

@@ -1,5 +1,5 @@
 import type { StoryEngineState } from "./storyReducer";
-import type { Choice, Step } from "./types";
+import type { Choice, Step, VariableBag } from "./types";
 
 export type SavedSnapshot = {
   id: string;
@@ -24,15 +24,51 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isVariableBag(value: unknown): boolean {
+type VariableValueTypes = {
+  number: number;
+  string: string;
+  boolean: boolean;
+};
+
+// Unsupported VariableBag values require extending this map and its validators.
+type VariableValueValidators =
+  Exclude<
+    VariableBag[string],
+    VariableValueTypes[keyof VariableValueTypes]
+  > extends never
+    ? {
+        [K in keyof VariableValueTypes]: (
+          value: unknown,
+        ) => value is Extract<VariableBag[string], VariableValueTypes[K]>;
+      }
+    : never;
+
+const variableValueValidators = {
+  number: (value) => typeof value === "number",
+  string: (value) => typeof value === "string",
+  boolean: (value) => typeof value === "boolean",
+} satisfies VariableValueValidators;
+
+function isVariableBag(value: unknown): value is VariableBag {
   return (
     isRecord(value) &&
-    Object.values(value).every(
-      (item) =>
-        typeof item === "number" ||
-        typeof item === "string" ||
-        typeof item === "boolean",
+    Object.values(value).every((item) =>
+      Object.values(variableValueValidators).some((validate) => validate(item)),
     )
+  );
+}
+
+function isInventoryItem(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.quantity === "number" &&
+    Number.isFinite(value.quantity) &&
+    (value.icon === undefined || typeof value.icon === "string") &&
+    (value.description === undefined ||
+      typeof value.description === "string") &&
+    (value.useAction === undefined || typeof value.useAction === "string")
   );
 }
 
@@ -119,7 +155,10 @@ function isSavedSnapshot(value: unknown): value is SavedSnapshot {
     isVariableBag(snapshot.vars) &&
     isVariableBag(snapshot.localVars) &&
     Array.isArray(snapshot.storyLog) &&
-    snapshot.storyLog.every(isStoryLogEntry)
+    snapshot.storyLog.every(isStoryLogEntry) &&
+    (snapshot.inventory === undefined ||
+      (Array.isArray(snapshot.inventory) &&
+        snapshot.inventory.every(isInventoryItem)))
   );
 }
 

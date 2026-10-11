@@ -41,7 +41,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 ### Action System
 
-Scripts in `.iyagi` files execute via `new Function(...)` (see `src/actions/index.ts`). Built-in actions: `jump(sceneId)`, `set(key, val)`, `inc(key, n)`, `dec(key, n)`. Variables declared in `vars:` auto-generate helpers: `setHp(v)`, `addHp(n)`, `subHp(n)` for numbers; `toggleAlive()` for booleans. Custom domain actions live in `src/actions/customActions.ts`.
+Scripts in `.iyagi` files execute via `new Function(...)` (see `src/actions/index.ts`). Built-in actions: `jump(sceneId)`, `set(key, val)`, `inc(key, n)`, `dec(key, n)`, `addItem(id, name, icon, quantity, description, useAction)`, `useItem(id)`, `removeItem(id, quantity)`, and `hasItem(id)`. Variables declared in `vars:` auto-generate helpers: `setHp(v)`, `addHp(n)`, `subHp(n)` for numbers; `toggleAlive()` for booleans. Custom domain actions live in `src/actions/customActions.ts`.
 
 ### Choice Conditions
 

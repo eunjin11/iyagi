@@ -1258,8 +1258,25 @@ export const IyagiGrammar = (): Grammar => loadedIyagiGrammar ?? (loadedIyagiGra
             "value": "="
           },
           {
-            "$type": "Keyword",
-            "value": "("
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "("
+              },
+              {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@30"
+                },
+                "arguments": [],
+                "cardinality": "*"
+              },
+              {
+                "$type": "Keyword",
+                "value": ")"
+              }
+            ]
           },
           {
             "$type": "Keyword",
