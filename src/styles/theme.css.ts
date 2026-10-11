@@ -16,6 +16,13 @@ export const vars = createGlobalTheme(":root", {
   color: {
     bg: "#ffffff",
     panel: "#ffffff",
+    panelRaised: "#f7f7f9",
+    overlayPanel: "rgba(35, 34, 43, 0.96)",
+    overlayBackdrop: "rgba(0, 0, 0, 0.78)",
+    overlayText: "#f4f0ea",
+    overlayBorder: "rgba(255, 255, 255, 0.14)",
+    overlayBorderStrong: "rgba(255, 255, 255, 0.26)",
+    overlayButtonBg: "rgba(255, 255, 255, 0.08)",
     text: "#222222",
     textMuted: "#666666",
     accent: "#7aa2ff",

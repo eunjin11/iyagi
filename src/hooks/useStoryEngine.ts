@@ -9,8 +9,9 @@ export type { StoryPlay } from "./useStoryPlay";
 export function useStoryEngine(
   story: Story,
   resumeState: StoryEngineState | null = null,
+  storyId: string,
 ) {
   const { persistence, ...play } = useStoryPlay(story, resumeState);
-  const saves = useSaveEngine(story, persistence);
+  const saves = useSaveEngine(story, persistence, storyId);
   return { play, saves };
 }

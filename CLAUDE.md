@@ -29,7 +29,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 1. **`.iyagi` DSL** → parsed by Langium (`src/language/parseIyagi.ts`) → AST → converted to `Story` object (`src/language/astToStory.ts`)
 2. At **build time**, the Vite plugin in `vite.config.ts` transforms `.iyagi` files to JSON
-3. `src/story/current.ts` imports all `src/scenarios/*.iyagi` files — the first one becomes the active story
+3. `src/story/current.ts` imports all `src/scenarios/*.iyagi` files into a story catalog; the main screen lets the player choose one
 4. The `Story` object (`src/story/types.ts`) is the canonical runtime format: `{ title, start, init, varDefs, scenes }`
 
 ### Core Engine

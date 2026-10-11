@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { defaultStoryEntry } from "../story/current";
 import { firstTextInScene } from "../story/engineDerived";
 import {
   deleteSavedSnapshot,
@@ -19,6 +20,7 @@ export type SaveEngineApi = {
 export function useSaveEngine(
   story: Story,
   persistence: StoryPlayPersistence,
+  storyId: string,
 ): SaveEngineApi {
   const { dispatch, getEngineState } = persistence;
 
@@ -27,19 +29,24 @@ export function useSaveEngine(
     const label =
       firstTextInScene(story, s.sceneId)?.slice(0, 40) ??
       `${s.sceneId} @${s.stepQueue.length}`;
-    return saveSnapshot(label, s);
-  }, [story, getEngineState]);
+    return saveSnapshot(label, s, storyId);
+  }, [story, storyId, getEngineState]);
 
   const listSaves = useCallback(
-    (): SavedSnapshot[] => listSavedSnapshots(),
-    [],
+    (): SavedSnapshot[] =>
+      listSavedSnapshots().filter(
+        (entry) => (entry.storyId ?? defaultStoryEntry.id) === storyId,
+      ),
+    [storyId],
   );
 
   const load = useCallback(
     (entry: SavedSnapshot) => {
+      const entryStoryId = entry.storyId ?? defaultStoryEntry.id;
+      if (entryStoryId !== storyId) return;
       dispatch({ type: "SET_SNAPSHOT", snapshot: entry.snapshot });
     },
-    [dispatch],
+    [dispatch, storyId],
   );
 
   const deleteSave = useCallback((id: string) => {

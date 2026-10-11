@@ -29,7 +29,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 1. **`.iyagi` DSL** → Langium으로 파싱 (`src/language/parseIyagi.ts`) → AST → `Story` 객체로 변환 (`src/language/astToStory.ts`)
 2. **빌드 타임**에 `vite.config.ts`의 Vite 플러그인이 `.iyagi` 파일을 JSON으로 변환
-3. `src/story/current.ts`가 `src/scenarios/*.iyagi` 파일을 모두 임포트 — 첫 번째 파일이 활성 스토리
+3. `src/story/current.ts`가 `src/scenarios/*.iyagi` 파일을 모두 임포트해 스토리 카탈로그를 만들고, 메인 화면에서 선택한다
 4. `Story` 객체 (`src/story/types.ts`)가 런타임 정규 포맷: `{ title, start, init, varDefs, scenes }`
 
 ### 핵심 엔진
