@@ -4,7 +4,7 @@ import { vars } from "../../styles/theme.css";
 export const overlay = style({
   position: "fixed",
   inset: 0,
-  background: "rgba(0,0,0,0.4)",
+  background: vars.color.overlayBackdrop,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
