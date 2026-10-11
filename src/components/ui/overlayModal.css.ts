@@ -8,7 +8,7 @@ export const overlayRoot = style({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  color: "#ffffff",
+  color: vars.color.overlayText,
 });
 
 /** 전체 화면 딤 — 닫기용 네이티브 버튼 */
@@ -23,7 +23,7 @@ export const backdrop = style({
   width: "100%",
   height: "100%",
   cursor: "pointer",
-  background: "rgba(0, 0, 0, 0.78)",
+  background: vars.color.overlayBackdrop,
   backdropFilter: "blur(6px)",
   WebkitBackdropFilter: "blur(6px)",
 });
@@ -73,7 +73,7 @@ export const closeButton = style({
   appearance: "none",
   background: "transparent",
   border: "none",
-  color: "#ffffff",
+  color: vars.color.overlayText,
   fontSize: "20px",
   cursor: "pointer",
   opacity: 0.7,

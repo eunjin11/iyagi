@@ -49,9 +49,9 @@ export const vars = createGlobalTheme(":root", {
     mono: `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace`,
   },
   shadow: {
-    sm: "0 1px 2px rgba(0,0,0,.1)",
-    md: "0 6px 16px rgba(0,0,0,.12)",
-    glow: "0 0 0 1px rgba(122,162,255,.18), 0 0 30px rgba(155,107,255,.10)",
+    sm: "0 1px 2px rgba(0, 0, 0, 0.1)",
+    md: "0 6px 16px rgba(0, 0, 0, 0.12)",
+    glow: "0 0 0 1px rgba(122, 162, 255, 0.18), 0 0 30px rgba(155, 107, 255, 0.10)",
   },
   size: {
     maxContent: "720px",
