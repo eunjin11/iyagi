@@ -127,7 +127,9 @@ https://github.com/user-attachments/assets/66e64c2d-16d7-428f-a3dc-af8959152ac4
 
 ## 스토리 로드
 
-- [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.iyagi`가 있으면 그중 첫 파일을 사용합니다.
+`src/scenarios/`에 `.iyagi` 파일을 여러 개 둘 수 있습니다. 각 파일은 메인 화면의 스토리 선택 목록에 자동으로 나타나며, 저장 데이터도 스토리별로 분리됩니다.
+
+- [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.iyagi`를 모두 불러와 스토리 선택 목록을 만들고, `demo.iyagi`를 기본 스토리로 사용합니다.
 - 로컬 시나리오를 쓰려면 `src/scenarios/`에 `.iyagi`를 두면 됩니다.
 
 ## 주요 소스 구조
