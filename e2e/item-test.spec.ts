@@ -20,7 +20,7 @@ async function startItems(page: Page) {
 async function checkKey(page: Page, owned: boolean) {
   const story = page.locator('[aria-label="story"]');
   await expect(
-    story.getByText(`스크립트의 열쇠 보유 검사: ${owned}`, { exact: true }),
+    story.getByText(`열쇠 보유 검사: ${owned}`, { exact: true }),
   ).toBeVisible();
   await advance(page, 1);
   await expect(

@@ -3,7 +3,6 @@ title: "아이템 테스트"
 vars:
   hp = 3
   gold = 0
-  hasKey = false
 
 start {
   "작은 상자가 놓인 방에 들어왔다."
@@ -41,11 +40,11 @@ ending {
 }
 
 key_test {
-  set("hasKey", hasItem("key"))
-  "스크립트의 열쇠 보유 검사: $hasKey"
   if (hasItem("key")) {
+    "열쇠 보유 검사: true"
     "열쇠가 있다. 잠긴 문을 열 수 있다."
   } else {
+    "열쇠 보유 검사: false"
     "열쇠가 없다. 먼저 열쇠를 챙기자."
   }
   choices: {
