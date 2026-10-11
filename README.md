@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/cda8203a-3360-485d-a67e-03824f01b89a
 - **React 18** + **TypeScript** + **Vite 5**
 - 스타일: **Vanilla Extract**
 - `.iyagi` 파싱: **langium**
-- 씬/선택 **스크립트**: `jump`, `set`, `inc`, `dec` 등 — 내부적으로 `new Function`으로 실행
+- 씬/선택 **스크립트**: `jump`, `set`, `inc`, `dec`, `addItem`, `removeItem` 등 — 내부적으로 `new Function`으로 실행
 
 ## 시작하기
 
@@ -41,6 +41,15 @@ yarn build && yarn preview
     - **`if (조건식) "레이블" -> { ... }`** — 조건이 참일 때만 선택 가능
     - 액션 블록 `{ }` 안에 텍스트 라인과 스크립트 라인을 자유롭게 섞어 쓸 수 있음
   - `choices: { }` 뒤에 텍스트·스크립트를 쓰면 **선택 후 자동 실행** (선택된 choice.steps 소진 후 이어서 처리)
+  - 인벤토리: `addItem(id, name, icon, quantity, description, useCode)`, `useItem(id)`, `removeItem(id, quantity)`, `hasItem(id)`
+
+`hasItem("key")`는 스크립트뿐 아니라 선택지와 `if` 조건에서도 사용할 수 있습니다. 새 조회 함수는 `src/actions/queries.ts`의 `createQueries`에 정의하면 두 실행 경로에 함께 제공됩니다. 조건 평가에는 엔진 상태를 받는 `evalStoryCondition`을 사용합니다.
+
+`src/scenarios/`에 `.iyagi` 파일을 여러 개 둘 수 있습니다. 각 파일은 메인 화면의 스토리 선택 목록에 자동으로 나타나며, 저장 데이터도 스토리별로 분리됩니다. 아이템의 `useCode`는 사용 버튼을 눌렀을 때 실행되고 아이템 1개가 소비됩니다.
+
+```iyagi
+addItem("potion", "회복 물약", "🧪", 2, "체력을 회복한다.", "heal(5)")
+```
 
 ## 같은 내용을 더 짧게: `.iyagi` vs JS(Object)
 
@@ -127,8 +136,6 @@ https://github.com/user-attachments/assets/66e64c2d-16d7-428f-a3dc-af8959152ac4
 
 ## 스토리 로드
 
-`src/scenarios/`에 `.iyagi` 파일을 여러 개 둘 수 있습니다. 각 파일은 메인 화면의 스토리 선택 목록에 자동으로 나타나며, 저장 데이터도 스토리별로 분리됩니다.
-
 - [`src/story/current.ts`](src/story/current.ts): `src/scenarios/*.iyagi`를 모두 불러와 스토리 선택 목록을 만들고, `demo.iyagi`를 기본 스토리로 사용합니다.
 - 로컬 시나리오를 쓰려면 `src/scenarios/`에 `.iyagi`를 두면 됩니다.
 
@@ -159,4 +166,3 @@ yarn test
 ```
 
 `src/__test__/` — 파싱, `evalWhen`, 액션, 리듀서 등.
-

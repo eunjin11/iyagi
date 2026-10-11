@@ -36,6 +36,20 @@ function isVariableBag(value: unknown): boolean {
   );
 }
 
+function isInventoryItem(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.quantity === "number" &&
+    Number.isFinite(value.quantity) &&
+    (value.icon === undefined || typeof value.icon === "string") &&
+    (value.description === undefined ||
+      typeof value.description === "string") &&
+    (value.useCode === undefined || typeof value.useCode === "string")
+  );
+}
+
 function isStoryLogEntry(value: unknown): boolean {
   if (!isRecord(value) || typeof value.sceneId !== "string") return false;
   if (value.kind === "enterScene") return true;
@@ -119,7 +133,10 @@ function isSavedSnapshot(value: unknown): value is SavedSnapshot {
     isVariableBag(snapshot.vars) &&
     isVariableBag(snapshot.localVars) &&
     Array.isArray(snapshot.storyLog) &&
-    snapshot.storyLog.every(isStoryLogEntry)
+    snapshot.storyLog.every(isStoryLogEntry) &&
+    (snapshot.inventory === undefined ||
+      (Array.isArray(snapshot.inventory) &&
+        snapshot.inventory.every(isInventoryItem)))
   );
 }
 

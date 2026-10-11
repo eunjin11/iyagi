@@ -72,6 +72,43 @@ describe("storyReducer", () => {
     expect(s.vars.hp).toBe(5);
   });
 
+  it("USE_ITEM은 현재 choices 스텝을 소비하지 않는다", () => {
+    const story: Story = {
+      title: "item",
+      start: "a",
+      scenes: {
+        a: {
+          id: "a",
+          steps: [
+            {
+              type: "choices",
+              choices: [{ text: "끝내기", steps: [] }],
+            },
+          ],
+        },
+      },
+      init: { hp: 3 },
+    };
+    let s = initialEngineState(story);
+    s = {
+      ...s,
+      inventory: [
+        {
+          id: "potion",
+          name: "회복 물약",
+          quantity: 1,
+          useCode: "heal(3)",
+        },
+      ],
+    };
+
+    s = applyStoryEvent(s, { type: "USE_ITEM", id: "potion" }, story);
+
+    expect(s.vars.hp).toBe(6);
+    expect(s.inventory).toEqual([]);
+    expect(s.stepQueue[0]?.type).toBe("choices");
+  });
+
   it("CHOOSE는 choice.steps를 큐 앞에 주입(choices 스텝 대체)", () => {
     const story: Story = {
       title: "t",

@@ -42,7 +42,9 @@ test.describe("e2e: click-through endings", () => {
     await page.getByRole("button", { name: "금화를 챙긴다" }).click();
 
     // after_gold: 텍스트 2개 → 스크립트 자동실행 → battle 진입
-    await expect(storyPanel.getByText("금화를 챙겼다.")).toBeVisible();
+    await expect(
+      storyPanel.getByText("금화와 회복 물약을 챙겼다."),
+    ).toBeVisible();
     await advanceStoryPanelN(page, 2);
 
     // battle: 스크립트 자동실행 후 텍스트 2개 → choices
@@ -125,7 +127,9 @@ test.describe("e2e: click-through endings", () => {
       await page.getByRole("button", { name: "금화를 챙긴다" }).click();
 
       // after_gold: 2 texts → battle 진입
-      await expect(storyPanel.getByText("금화를 챙겼다.")).toBeVisible();
+      await expect(
+        storyPanel.getByText("금화와 회복 물약을 챙겼다."),
+      ).toBeVisible();
       await advanceStoryPanelN(page, 2);
 
       // battle: 2 texts → flee (hp 변화 없음)

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import type { SavedSnapshot } from "../../story/snapshots";
+import type { InventoryItem } from "../../story/types";
 import { OverlayModal } from "../ui/OverlayModal";
 import * as css from "./gameMenu.css.ts";
+import { InventoryGrid } from "./InventoryGrid";
 import { SavedSlotsList } from "./SavedSlotsList";
 
 type Props = {
@@ -9,6 +11,9 @@ type Props = {
   listSaves: () => SavedSnapshot[];
   onLoad: (entry: SavedSnapshot) => void;
   onDeleteSave: (id: string) => void;
+  inventory: InventoryItem[];
+  onUseItem: (id: string) => void;
+  onDropItem: (id: string) => void;
 };
 
 export const GameMenu = ({
@@ -16,16 +21,22 @@ export const GameMenu = ({
   listSaves,
   onLoad,
   onDeleteSave,
+  inventory,
+  onUseItem,
+  onDropItem,
 }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoadOpen, setIsLoadOpen] = useState(false);
+  const [panel, setPanel] = useState<"menu" | "load">("menu");
 
   return (
     <>
       <button
         type="button"
         className={css.menuButton}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setPanel("menu");
+          setIsOpen(true);
+        }}
         aria-label="menu"
       >
         ☰
@@ -35,15 +46,15 @@ export const GameMenu = ({
         open={isOpen}
         onDismiss={() => {
           setIsOpen(false);
-          setIsLoadOpen(false);
+          setPanel("menu");
         }}
-        title={isLoadOpen ? "불러오기" : "메뉴"}
+        title={panel === "load" ? "불러오기" : "메뉴"}
         variant="panel"
         panelClassName={css.menuDialog}
-        ariaLabel={isLoadOpen ? "불러오기" : "menu"}
+        ariaLabel={panel === "load" ? "불러오기" : "menu"}
         closeAriaLabel="close-menu"
       >
-        {!isLoadOpen ? (
+        {panel === "menu" ? (
           <div className={css.menuPanel}>
             <div className={css.menuRow}>
               <button
@@ -56,19 +67,25 @@ export const GameMenu = ({
               <button
                 type="button"
                 className={css.loadItemButton}
-                onClick={() => setIsLoadOpen(true)}
+                onClick={() => setPanel("load")}
               >
                 불러오기
               </button>
             </div>
+            <h2 className={css.inventoryHeading}>인벤토리</h2>
+            <InventoryGrid
+              items={inventory}
+              onUse={onUseItem}
+              onDrop={onDropItem}
+            />
           </div>
         ) : (
           <SavedSlotsList
-            active={isLoadOpen}
+            active={isOpen}
             listSaves={listSaves}
             onPickSave={(s) => {
               onLoad(s);
-              setIsLoadOpen(false);
+              setPanel("menu");
               setIsOpen(false);
             }}
             onDeleteSave={onDeleteSave}
@@ -76,7 +93,7 @@ export const GameMenu = ({
               <button
                 type="button"
                 className={css.loadItemButton}
-                onClick={() => setIsLoadOpen(false)}
+                onClick={() => setPanel("menu")}
                 aria-label="back-to-menu"
               >
                 ← 메뉴로

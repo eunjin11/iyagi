@@ -1,9 +1,8 @@
-import { evalWhen } from "../../story/evalWhen";
-import type { Choice, VariableBag } from "../../story/types";
+import type { Choice } from "../../story/types";
 
 type Props = {
   choices: Choice[];
-  vars: VariableBag;
+  canChoose: (choice: Choice) => boolean;
   onChoose: (choice: Choice) => void;
   className: string;
   buttonClassName: string;
@@ -11,7 +10,7 @@ type Props = {
 
 export const ChoiceList = ({
   choices,
-  vars,
+  canChoose,
   onChoose,
   className,
   buttonClassName,
@@ -21,7 +20,7 @@ export const ChoiceList = ({
   return (
     <nav className={className} aria-label="actions">
       {choices.map((c) => {
-        const enabled = !c.enabledWhen || evalWhen(c.enabledWhen, vars);
+        const enabled = canChoose(c);
         const choiceKey = `${c.text}|${c.enabledWhen ?? ""}`;
         return (
           <button
