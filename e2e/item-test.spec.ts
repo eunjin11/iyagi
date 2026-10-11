@@ -206,7 +206,7 @@ test("아이템 스토리: 저장 후 소비한 인벤토리와 HP·사용 동�
 });
 
 test.describe("아이템 툴팁 터치", () => {
-  test.use({ hasTouch: true });
+  test.use({ hasTouch: true, viewport: { width: 740, height: 1000 } });
 
   test("아이템 툴팁: 빈 슬롯과 메뉴 터치로 닫고 내부 터치는 유지", async ({
     page,
@@ -231,6 +231,20 @@ test.describe("아이템 툴팁 터치", () => {
       .locator("li")
       .last()
       .tap();
+    await expect(details).toHaveCount(0);
+    await expect(
+      page.getByRole("dialog", { name: "menu", exact: true }),
+    ).toBeVisible();
+    await potion.tap();
+    await expect(details).toBeVisible();
+    const grid = await page
+      .getByRole("list", { name: "인벤토리 아이템" })
+      .boundingBox();
+    if (!grid) throw new Error("인벤토리 그리드를 찾을 수 없습니다.");
+    await page.touchscreen.tap(
+      grid.x + grid.width / 2,
+      grid.y + grid.height + 12,
+    );
     await expect(details).toHaveCount(0);
     await expect(
       page.getByRole("dialog", { name: "menu", exact: true }),
