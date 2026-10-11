@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { deriveFromState } from "../story/engineDerived";
+import { isChoiceEnabled } from "../story/evalWhen";
 import type { StoryLogEntry } from "../story/storyLog";
 import {
   applyStoryEvent,
@@ -27,6 +28,7 @@ export type StoryPlay = {
   storyLog: StoryLogEntry[];
   advance: () => void;
   choose: (choice: Choice) => void;
+  canChoose: (choice: Choice) => boolean;
   useItem: (id: string) => void;
   dropItem: (id: string, quantity?: number) => void;
   persistence: StoryPlayPersistence;
@@ -107,6 +109,7 @@ export function useStoryPlay(
     storyLog: state.storyLog,
     advance,
     choose,
+    canChoose: (choice) => isChoiceEnabled(choice, state),
     useItem,
     dropItem,
     persistence: { dispatch, getEngineState },

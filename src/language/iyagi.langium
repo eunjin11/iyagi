@@ -147,7 +147,7 @@ WhenToken returns string:
   | LT
   | GT
   | '='
-  | '('
+  | '(' WhenToken* ')'
   | ','
   | '.';
 

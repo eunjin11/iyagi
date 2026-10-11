@@ -1,4 +1,4 @@
-import { evalWhen } from "./evalWhen";
+import { evalStoryCondition } from "./evalWhen";
 import { runScriptWithResult } from "./runScriptWithResult";
 import type { StoryLogEntry } from "./storyLog";
 import type { Choice, InventoryItem, Step, Story, VariableBag } from "./types";
@@ -132,8 +132,7 @@ export function applyStoryEvent(
   if (event.type === "EVAL_CONDITIONAL") {
     const step = state.stepQueue[0];
     if (step?.type !== "conditional") return state;
-    const mergedVars = { ...state.vars, ...state.localVars };
-    const chosen = evalWhen(step.cond, mergedVars)
+    const chosen = evalStoryCondition(step.cond, state)
       ? step.thenSteps
       : step.elseSteps;
     return { ...state, stepQueue: [...chosen, ...state.stepQueue.slice(1)] };

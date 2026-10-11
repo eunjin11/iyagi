@@ -25,11 +25,11 @@ const PlayPage = ({ story, storyId, resumeState = null, onGoHome }: Props) => {
     isDone,
     choices,
     vars,
-    localVars,
     inventory,
     storyLog,
     advance,
     choose,
+    canChoose,
     useItem,
     dropItem,
   } = play;
@@ -87,7 +87,7 @@ const PlayPage = ({ story, storyId, resumeState = null, onGoHome }: Props) => {
         <div className={css.choiceSlot}>
           <ChoiceList
             choices={choices}
-            vars={{ ...vars, ...localVars }}
+            canChoose={canChoose}
             onChoose={choose}
             className={css.actionRow}
             buttonClassName={css.actionButton}

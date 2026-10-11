@@ -1,6 +1,7 @@
 import type { VarDef, VariableBag } from "../story/types";
 import type { ActionContext } from "./context";
 import { type CustomActions, createCustomActions } from "./customActions";
+import { createQueries } from "./queries";
 
 export type {
   ActionContext,
@@ -132,10 +133,6 @@ function builtInActions(ctx: ActionContext, varDefs?: VarDef[]) {
     );
   }
 
-  function hasItem(id: string): boolean {
-    return (ctx.inventory ?? []).some((item) => item.id === id);
-  }
-
   function useItem(id: string): boolean {
     if (!ctx.useItem) {
       throw new Error("useItem is unavailable outside the story engine");
@@ -151,7 +148,7 @@ function builtInActions(ctx: ActionContext, varDefs?: VarDef[]) {
     dec,
     addItem,
     removeItem,
-    hasItem,
+    ...createQueries(() => ctx.inventory ?? []),
     useItem,
     ...auto,
   };
@@ -171,9 +168,9 @@ export type BuiltInActions = {
     useCode?: string,
   ) => void;
   removeItem: (id: string, quantity?: number) => void;
-  hasItem: (id: string) => boolean;
   useItem: (id: string) => boolean;
-} & Record<string, unknown>;
+} & ReturnType<typeof createQueries> &
+  Record<string, unknown>;
 
 /** DSL 스크립트에서 사용할 수 있는 Action 함수 집합 */
 export function createActions(

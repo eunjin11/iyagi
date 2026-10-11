@@ -1,4 +1,5 @@
 import type { StoryEngineState } from "./storyReducer";
+import type { Choice, Step } from "./types";
 
 export type SavedSnapshot = {
   id: string;
@@ -57,6 +58,59 @@ function isStoryLogEntry(value: unknown): boolean {
   return value.kind === "choice" && typeof value.text === "string";
 }
 
+function isStepList(value: unknown): boolean {
+  return Array.isArray(value) && value.every(isStep);
+}
+
+type FieldValidators<T> = {
+  [K in keyof T]-?: (value: unknown) => boolean;
+};
+
+function validateFields(
+  value: Record<string, unknown>,
+  validators: Record<string, (value: unknown) => boolean>,
+): boolean {
+  return Object.entries(validators).every(([key, validate]) =>
+    validate(value[key]),
+  );
+}
+
+const choiceValidators = {
+  text: (value) => typeof value === "string",
+  steps: isStepList,
+  enabledWhen: (value) => value === undefined || typeof value === "string",
+} satisfies FieldValidators<Choice>;
+
+function isChoice(value: unknown): boolean {
+  return isRecord(value) && validateFields(value, choiceValidators);
+}
+
+// New step kinds or fields require a validator at compile time.
+type StepValidators = {
+  [K in Step["type"]]: FieldValidators<
+    Omit<Extract<Step, { type: K }>, "type">
+  >;
+};
+
+const stepValidators = {
+  text: { content: (value) => typeof value === "string" },
+  script: { code: (value) => typeof value === "string" },
+  choices: {
+    choices: (value) => Array.isArray(value) && value.every(isChoice),
+  },
+  conditional: {
+    cond: (value) => typeof value === "string",
+    thenSteps: isStepList,
+    elseSteps: isStepList,
+  },
+} satisfies StepValidators;
+
+function isStep(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (!Object.keys(stepValidators).includes(value.type)) return false;
+  return validateFields(value, stepValidators[value.type as Step["type"]]);
+}
+
 function isSavedSnapshot(value: unknown): value is SavedSnapshot {
   if (!isRecord(value)) return false;
   if (
@@ -73,7 +127,7 @@ function isSavedSnapshot(value: unknown): value is SavedSnapshot {
   if (!isRecord(snapshot)) return false;
   return (
     typeof snapshot.sceneId === "string" &&
-    Array.isArray(snapshot.stepQueue) &&
+    isStepList(snapshot.stepQueue) &&
     Array.isArray(snapshot.pastTexts) &&
     snapshot.pastTexts.every((text) => typeof text === "string") &&
     isVariableBag(snapshot.vars) &&
