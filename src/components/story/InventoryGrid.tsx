@@ -12,7 +12,7 @@ type Props = {
 
 export function InventoryGrid({ items, onUse, onDrop }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const inventoryRef = useRef<HTMLDivElement>(null);
+  const selectedButtonRef = useRef<HTMLButtonElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
   const slotCount = Math.max(MIN_SLOTS, items.length);
   const slotKeys = Array.from(
@@ -25,7 +25,11 @@ export function InventoryGrid({ items, onUse, onDrop }: Props) {
 
     const closeOnOutsidePointer = (event: PointerEvent) => {
       const target = event.target;
-      if (target instanceof Node && !inventoryRef.current?.contains(target)) {
+      if (
+        target instanceof Node &&
+        !selectedButtonRef.current?.contains(target) &&
+        !detailsRef.current?.contains(target)
+      ) {
         setSelectedId(null);
       }
     };
@@ -46,7 +50,7 @@ export function InventoryGrid({ items, onUse, onDrop }: Props) {
   }, [selectedId]);
 
   return (
-    <div ref={inventoryRef} className={css.inventoryPanel}>
+    <div className={css.inventoryPanel}>
       {items.length === 0 && (
         <p className={css.inventoryEmpty}>아직 아이템이 없습니다.</p>
       )}
@@ -74,6 +78,7 @@ export function InventoryGrid({ items, onUse, onDrop }: Props) {
               <button
                 type="button"
                 className={css.inventorySlotButton}
+                ref={isSelected ? selectedButtonRef : undefined}
                 data-selected={isSelected || undefined}
                 aria-label={`${item.name}${item.quantity > 1 ? ` ${item.quantity}개` : ""}`}
                 aria-pressed={isSelected}

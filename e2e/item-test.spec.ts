@@ -125,3 +125,119 @@ test("아이템 스토리: 물약 사용으로 HP 회복 및 버리기", async (
     page.getByText("현재 HP: 6 / 금화: 10", { exact: true }),
   ).toBeVisible();
 });
+
+test("아이템 스토리: 저장 후 소비한 인벤토리와 HP·사용 동작 복원", async ({
+  page,
+}) => {
+  await startItems(page);
+  await page.getByRole("button", { name: "금화와 회복 물약을 챙긴다" }).click();
+  await advance(page, 2);
+  await page
+    .getByRole("button", { name: "회복 물약을 하나 더 챙긴다" })
+    .click();
+  await advance(page, 2);
+  await page.getByRole("button", { name: "menu", exact: true }).click();
+  await page.getByRole("button", { name: "저장하기", exact: true }).click();
+  await page
+    .getByRole("button", { name: "회복 물약 2개", exact: true })
+    .click();
+  await page.getByRole("button", { name: "사용", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "회복 물약", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "버리기", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "회복 물약", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "close-menu" }).click();
+  await page.getByRole("button", { name: "테스트를 끝낸다" }).click();
+  await advance(page, 1);
+  await expect(
+    page.getByText("현재 HP: 6 / 금화: 10", { exact: true }),
+  ).toBeVisible();
+
+  async function loadInventorySave() {
+    await page.getByRole("button", { name: "menu", exact: true }).click();
+    await page.getByRole("button", { name: "불러오기", exact: true }).click();
+    await page
+      .getByRole("button", { name: "금화와 회복 물약을 챙겼다.", exact: true })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "불러오기", exact: true }),
+    ).toHaveCount(0);
+  }
+
+  await loadInventorySave();
+  await page.getByRole("button", { name: "menu", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "금화 주머니", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "회복 물약 2개", exact: true })
+    .click();
+  await expect(
+    page.getByText("사용하면 체력을 3 회복한다.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "사용", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "close-menu" }).click();
+  await page.getByRole("button", { name: "테스트를 끝낸다" }).click();
+  await advance(page, 1);
+  await expect(
+    page.getByText("현재 HP: 3 / 금화: 10", { exact: true }),
+  ).toBeVisible();
+
+  await loadInventorySave();
+  await page.getByRole("button", { name: "menu", exact: true }).click();
+  await page
+    .getByRole("button", { name: "회복 물약 2개", exact: true })
+    .click();
+  await page.getByRole("button", { name: "사용", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "회복 물약", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "close-menu" }).click();
+  await page.getByRole("button", { name: "테스트를 끝낸다" }).click();
+  await advance(page, 1);
+  await expect(
+    page.getByText("현재 HP: 6 / 금화: 10", { exact: true }),
+  ).toBeVisible();
+});
+
+test.describe("아이템 툴팁 터치", () => {
+  test.use({ hasTouch: true });
+
+  test("아이템 툴팁: 빈 슬롯과 메뉴 터치로 닫고 내부 터치는 유지", async ({
+    page,
+  }) => {
+    await startItems(page);
+    await page.getByRole("button", { name: "금화와 회복 물약을 챙긴다" }).tap();
+    await advance(page, 2);
+    await page.getByRole("button", { name: "menu", exact: true }).tap();
+    const potion = page.getByRole("button", { name: "회복 물약", exact: true });
+    const details = page.getByRole("region", {
+      name: "회복 물약",
+      exact: true,
+    });
+    await potion.tap();
+    await expect(details).toBeVisible();
+    await details
+      .getByText("사용하면 체력을 3 회복한다.", { exact: true })
+      .tap();
+    await expect(details).toBeVisible();
+    await page
+      .getByRole("list", { name: "인벤토리 아이템" })
+      .locator("li")
+      .last()
+      .tap();
+    await expect(details).toHaveCount(0);
+    await expect(
+      page.getByRole("dialog", { name: "menu", exact: true }),
+    ).toBeVisible();
+    await potion.tap();
+    await expect(details).toBeVisible();
+    await page.getByRole("heading", { name: "인벤토리", exact: true }).tap();
+    await expect(details).toHaveCount(0);
+  });
+});
