@@ -1,5 +1,5 @@
 import type { StoryEngineState } from "./storyReducer";
-import type { Choice, Step } from "./types";
+import type { Choice, Step, VariableBag } from "./types";
 
 export type SavedSnapshot = {
   id: string;
@@ -24,14 +24,42 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isVariableBag(value: unknown): boolean {
+// Each allowed value category must have a runtime validator.
+// Adding null, arrays, objects, etc. to VariableBag makes missing validators an error.
+type VariableValueKind<T> = T extends number
+  ? "number"
+  : T extends string
+    ? "string"
+    : T extends boolean
+      ? "boolean"
+      : T extends null
+        ? "null"
+        : T extends undefined
+          ? "undefined"
+          : T extends bigint
+            ? "bigint"
+            : T extends symbol
+              ? "symbol"
+              : T extends (...args: never[]) => unknown
+                ? "function"
+                : T extends object
+                  ? "object"
+                  : "other";
+
+const variableValueValidators = {
+  number: (value) => typeof value === "number",
+  string: (value) => typeof value === "string",
+  boolean: (value) => typeof value === "boolean",
+} satisfies Record<
+  VariableValueKind<VariableBag[string]>,
+  (value: unknown) => boolean
+>;
+
+function isVariableBag(value: unknown): value is VariableBag {
   return (
     isRecord(value) &&
-    Object.values(value).every(
-      (item) =>
-        typeof item === "number" ||
-        typeof item === "string" ||
-        typeof item === "boolean",
+    Object.values(value).every((item) =>
+      Object.values(variableValueValidators).some((validate) => validate(item)),
     )
   );
 }
