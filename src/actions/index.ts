@@ -2,7 +2,13 @@ import type { VarDef, VariableBag } from "../story/types";
 import type { ActionContext } from "./context";
 import { type CustomActions, createCustomActions } from "./customActions";
 
-export type { ActionContext, NavigateFn, SetVarsFn } from "./context";
+export type {
+  ActionContext,
+  NavigateFn,
+  SetInventoryFn,
+  SetVarsFn,
+  UseInventoryItemFn,
+} from "./context";
 export type { CustomActions } from "./customActions";
 
 function capFirst(s: string): string {
@@ -79,8 +85,76 @@ function builtInActions(ctx: ActionContext, varDefs?: VarDef[]) {
     setVars((prev) => ({ ...prev, [key]: (Number(prev[key]) || 0) - by }));
   }
 
+  function addItem(
+    id: string,
+    name: string,
+    icon = "📦",
+    quantity = 1,
+    description = "",
+    useCode = "",
+  ) {
+    if (!ctx.setInventory) {
+      throw new Error("addItem is unavailable outside the story engine");
+    }
+    const amount = Math.max(1, Math.floor(Number(quantity) || 1));
+    ctx.setInventory((prev) => {
+      const existing = prev.find((item) => item.id === id);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === id ? { ...item, quantity: item.quantity + amount } : item,
+        );
+      }
+      return [
+        ...prev,
+        {
+          id,
+          name,
+          icon,
+          quantity: amount,
+          description,
+          ...(useCode ? { useCode } : {}),
+        },
+      ];
+    });
+  }
+
+  function removeItem(id: string, quantity = 1) {
+    if (!ctx.setInventory) {
+      throw new Error("removeItem is unavailable outside the story engine");
+    }
+    const amount = Math.max(1, Math.floor(Number(quantity) || 1));
+    ctx.setInventory((prev) =>
+      prev
+        .map((item) =>
+          item.id === id ? { ...item, quantity: item.quantity - amount } : item,
+        )
+        .filter((item) => item.quantity > 0),
+    );
+  }
+
+  function hasItem(id: string): boolean {
+    return (ctx.inventory ?? []).some((item) => item.id === id);
+  }
+
+  function useItem(id: string): boolean {
+    if (!ctx.useItem) {
+      throw new Error("useItem is unavailable outside the story engine");
+    }
+    return ctx.useItem(id);
+  }
+
   const auto = autoHelpersFromVarDefs(ctx, varDefs);
-  return { jump, set, inc, dec, ...auto };
+  return {
+    jump,
+    set,
+    inc,
+    dec,
+    addItem,
+    removeItem,
+    hasItem,
+    useItem,
+    ...auto,
+  };
 }
 
 export type BuiltInActions = {
@@ -88,6 +162,17 @@ export type BuiltInActions = {
   set: (key: string, value: number | string | boolean) => void;
   inc: (key: string, by?: number) => void;
   dec: (key: string, by?: number) => void;
+  addItem: (
+    id: string,
+    name: string,
+    icon?: string,
+    quantity?: number,
+    description?: string,
+    useCode?: string,
+  ) => void;
+  removeItem: (id: string, quantity?: number) => void;
+  hasItem: (id: string) => boolean;
+  useItem: (id: string) => boolean;
 } & Record<string, unknown>;
 
 /** DSL 스크립트에서 사용할 수 있는 Action 함수 집합 */

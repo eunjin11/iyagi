@@ -61,8 +61,10 @@ deep {
 }
 
 after_gold {
-  "금화를 챙겼다."
+  "금화와 회복 물약을 챙겼다."
   "잠복 중이던 괴한이 앞을 막아선다!"
+  addItem("gold-pouch", "금화 주머니", "💰", 1, "모험에서 모은 금화를 담아 두는 주머니.")
+  addItem("healing-potion", "회복 물약", "🧪", 1, "사용하면 체력을 3 회복한다.", "heal(3)")
   setEnemyHp(10)
   jump("battle")
 }

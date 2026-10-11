@@ -18,7 +18,7 @@ export const menuButton = style({
   minHeight: 44,
   boxSizing: "border-box",
   selectors: {
-    "&:hover": { color: vars.color.text, background: "rgba(0,0,0,0.04)" },
+    "&:hover": { color: vars.color.text, background: vars.color.buttonBg },
   },
 });
 
@@ -28,6 +28,12 @@ export const menuDialog = style({
 });
 
 export const menuPanel = style({
+  display: "flex",
+  flexDirection: "column",
+  minHeight: 0,
+  overflowY: "auto",
+  width: "100%",
+  boxSizing: "border-box",
   padding: `0 ${vars.space.xl} ${vars.space.xl}`,
 });
 
@@ -37,11 +43,18 @@ export const menuRow = style({
   flexWrap: "wrap",
 });
 
+export const inventoryHeading = style({
+  margin: `${vars.space.xl} 0 ${vars.space.sm}`,
+  color: vars.color.overlayText,
+  fontSize: 15,
+  fontWeight: 600,
+});
+
 export const loadItemButton = style({
   appearance: "none",
-  background: "rgba(255,255,255,0.08)",
-  border: "1px solid rgba(255,255,255,0.14)",
-  color: "#ffffff",
+  background: vars.color.overlayButtonBg,
+  border: `1px solid ${vars.color.overlayBorder}`,
+  color: vars.color.overlayText,
   cursor: "pointer",
   padding: `${vars.space.sm} ${vars.space.md}`,
   borderRadius: vars.radius.sm,
@@ -51,7 +64,7 @@ export const loadItemButton = style({
   flexDirection: "column",
   gap: 4,
   selectors: {
-    "&:hover": { background: "rgba(255,255,255,0.12)" },
+    "&:hover": { background: vars.color.overlayButtonHover },
     "&:active": { transform: "translateY(1px)" },
   },
 });
@@ -71,12 +84,12 @@ export const saveRowLoad = style({
   flexDirection: "row",
   alignItems: "stretch",
   minWidth: 0,
-  background: "rgba(255,255,255,0.08)",
-  border: "1px solid rgba(255,255,255,0.14)",
+  background: vars.color.overlayButtonBg,
+  border: `1px solid ${vars.color.overlayBorder}`,
   borderRadius: vars.radius.sm,
   overflow: "hidden",
   selectors: {
-    "&:hover": { background: "rgba(255,255,255,0.12)" },
+    "&:hover": { background: vars.color.overlayButtonHover },
   },
 });
 
@@ -87,7 +100,7 @@ export const saveRowLoadButton = style({
   appearance: "none",
   background: "transparent",
   border: "none",
-  color: "#ffffff",
+  color: vars.color.overlayText,
   cursor: "pointer",
   padding: `${vars.space.sm} ${vars.space.md}`,
   fontSize: 14,
@@ -109,7 +122,7 @@ export const deleteSaveButton = style({
   padding: `${vars.space.sm} ${vars.space.md}`,
   background: "transparent",
   border: "none",
-  color: "rgba(255,255,255,0.75)",
+  color: vars.color.overlayMuted,
   cursor: "pointer",
   fontSize: 16,
   lineHeight: 1,
@@ -117,6 +130,6 @@ export const deleteSaveButton = style({
   alignItems: "center",
   justifyContent: "center",
   selectors: {
-    "&:hover": { color: "#ffb4b4" },
+    "&:hover": { color: vars.color.overlayDanger },
   },
 });

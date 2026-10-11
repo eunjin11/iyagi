@@ -5,29 +5,33 @@ import { GameMenu } from "../components/story/GameMenu";
 import { StoryLogPanel } from "../components/story/StoryLogPanel";
 import { StoryPanel } from "../components/story/StoryPanel";
 import { useStoryEngine } from "../hooks/useStoryEngine";
-import { currentStory } from "../story/current";
 import type { StoryEngineState } from "../story/storyReducer";
+import type { Story } from "../story/types";
 import { interpolateVars } from "../utils/interpolateVars";
 import * as css from "./playPage.css.ts";
 
 type Props = {
+  story: Story;
+  storyId: string;
   resumeState?: StoryEngineState | null;
   onGoHome?: () => void;
 };
 
-const PlayPage = ({ resumeState = null, onGoHome }: Props) => {
-  const { play, saves } = useStoryEngine(currentStory, resumeState);
+const PlayPage = ({ story, storyId, resumeState = null, onGoHome }: Props) => {
+  const { play, saves } = useStoryEngine(story, resumeState, storyId);
   const {
-    story,
     currentStep,
     pastTexts,
     isDone,
     choices,
     vars,
     localVars,
+    inventory,
     storyLog,
     advance,
     choose,
+    useItem,
+    dropItem,
   } = play;
   const { save, listSaves, load, deleteSave } = saves;
 
@@ -64,6 +68,9 @@ const PlayPage = ({ resumeState = null, onGoHome }: Props) => {
           listSaves={listSaves}
           onLoad={load}
           onDeleteSave={deleteSave}
+          inventory={inventory}
+          onUseItem={useItem}
+          onDropItem={dropItem}
         />
       </header>
 

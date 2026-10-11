@@ -23,9 +23,12 @@ export type StoryPlay = {
   choices: Choice[];
   vars: StoryEngineState["vars"];
   localVars: StoryEngineState["localVars"];
+  inventory: NonNullable<StoryEngineState["inventory"]>;
   storyLog: StoryLogEntry[];
   advance: () => void;
   choose: (choice: Choice) => void;
+  useItem: (id: string) => void;
+  dropItem: (id: string, quantity?: number) => void;
   persistence: StoryPlayPersistence;
 };
 
@@ -83,6 +86,14 @@ export function useStoryPlay(
     dispatch({ type: "CHOOSE", choice });
   }
 
+  function useItem(id: string) {
+    dispatch({ type: "USE_ITEM", id });
+  }
+
+  function dropItem(id: string, quantity = 1) {
+    dispatch({ type: "DROP_ITEM", id, quantity });
+  }
+
   return {
     story,
     scene,
@@ -92,9 +103,12 @@ export function useStoryPlay(
     choices,
     vars: state.vars,
     localVars: state.localVars,
+    inventory: state.inventory ?? [],
     storyLog: state.storyLog,
     advance,
     choose,
+    useItem,
+    dropItem,
     persistence: { dispatch, getEngineState },
   };
 }
