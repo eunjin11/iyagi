@@ -7,7 +7,7 @@ export type InventoryItem = {
   icon?: string;
   description?: string;
   /** 사용 시 스토리 엔진에서 실행할 iyagi 코드. */
-  useCode?: string;
+  useAction?: string;
 };
 
 export type VarDef = {

@@ -141,7 +141,7 @@ export function applyStoryEvent(
     const item = state.inventory?.find(
       (candidate) => candidate.id === event.id,
     );
-    if (!item?.useCode?.trim()) return state;
+    if (!item?.useAction?.trim()) return state;
     const { vars, localVars, inventory, jumpTo, injectedSteps } =
       runScriptWithResult(
         `useItem(${JSON.stringify(event.id)})`,

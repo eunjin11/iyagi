@@ -46,7 +46,7 @@ function isInventoryItem(value: unknown): boolean {
     (value.icon === undefined || typeof value.icon === "string") &&
     (value.description === undefined ||
       typeof value.description === "string") &&
-    (value.useCode === undefined || typeof value.useCode === "string")
+    (value.useAction === undefined || typeof value.useAction === "string")
   );
 }
 

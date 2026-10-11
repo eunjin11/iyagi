@@ -92,7 +92,7 @@ function builtInActions(ctx: ActionContext, varDefs?: VarDef[]) {
     icon = "📦",
     quantity = 1,
     description = "",
-    useCode = "",
+    useAction = "",
   ) {
     if (!ctx.setInventory) {
       throw new Error("addItem is unavailable outside the story engine");
@@ -113,7 +113,7 @@ function builtInActions(ctx: ActionContext, varDefs?: VarDef[]) {
           icon,
           quantity: amount,
           description,
-          ...(useCode ? { useCode } : {}),
+          ...(useAction ? { useAction } : {}),
         },
       ];
     });
@@ -165,7 +165,7 @@ export type BuiltInActions = {
     icon?: string,
     quantity?: number,
     description?: string,
-    useCode?: string,
+    useAction?: string,
   ) => void;
   removeItem: (id: string, quantity?: number) => void;
   useItem: (id: string) => boolean;

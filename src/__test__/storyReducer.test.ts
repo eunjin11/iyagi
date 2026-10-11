@@ -97,7 +97,7 @@ describe("storyReducer", () => {
           id: "potion",
           name: "회복 물약",
           quantity: 1,
-          useCode: "heal(3)",
+          useAction: "heal(3)",
         },
       ],
     };

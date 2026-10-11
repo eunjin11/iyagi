@@ -41,7 +41,7 @@ describe("inventory actions", () => {
     expect(result.inventory).toEqual([]);
   });
 
-  it("useItem은 아이템의 useCode를 실행하고 1개를 소비한다", () => {
+  it("useItem은 아이템의 useAction를 실행하고 1개를 소비한다", () => {
     const result = runScriptWithResult(
       'useItem("potion")',
       { hp: 5 },
@@ -52,7 +52,7 @@ describe("inventory actions", () => {
           id: "potion",
           name: "회복 물약",
           quantity: 2,
-          useCode: "heal(3)",
+          useAction: "heal(3)",
         },
       ],
     );

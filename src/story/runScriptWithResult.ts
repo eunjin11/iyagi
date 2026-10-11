@@ -24,9 +24,9 @@ export function runScriptWithResult(
   const injectedSteps: Step[] = [];
   const useInventoryItem = (id: string): boolean => {
     const item = inventoryBag.find((candidate) => candidate.id === id);
-    if (!item?.useCode?.trim()) return false;
+    if (!item?.useAction?.trim()) return false;
 
-    runScript(item.useCode, ctx.vars, ctx, varDefs, localBag);
+    runScript(item.useAction, ctx.vars, ctx, varDefs, localBag);
     inventoryBag = inventoryBag
       .map((candidate) =>
         candidate.id === id

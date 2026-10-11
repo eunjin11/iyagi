@@ -41,7 +41,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 ### 액션 시스템
 
-`.iyagi` 파일의 스크립트는 `new Function(...)`으로 실행된다 (`src/actions/index.ts` 참고). 내장 액션: `jump(sceneId)`, `set(key, val)`, `inc(key, n)`, `dec(key, n)`, `addItem(id, name, icon, quantity, description, useCode)`, `useItem(id)`, `removeItem(id, quantity)`, `hasItem(id)`. `vars:`에 선언된 변수는 자동으로 헬퍼 함수를 생성한다: 숫자형은 `setHp(v)`, `addHp(n)`, `subHp(n)`, 불리언형은 `toggleAlive()`. 커스텀 도메인 액션은 `src/actions/customActions.ts`에 작성한다.
+`.iyagi` 파일의 스크립트는 `new Function(...)`으로 실행된다 (`src/actions/index.ts` 참고). 내장 액션: `jump(sceneId)`, `set(key, val)`, `inc(key, n)`, `dec(key, n)`, `addItem(id, name, icon, quantity, description, useAction)`, `useItem(id)`, `removeItem(id, quantity)`, `hasItem(id)`. `vars:`에 선언된 변수는 자동으로 헬퍼 함수를 생성한다: 숫자형은 `setHp(v)`, `addHp(n)`, `subHp(n)`, 불리언형은 `toggleAlive()`. 커스텀 도메인 액션은 `src/actions/customActions.ts`에 작성한다.
 
 ### 선택지 조건
 

@@ -115,7 +115,7 @@ export function InventoryGrid({ items, onUse, onDrop }: Props) {
                   <strong id={`${detailsId}-title`}>{item.name}</strong>
                   {item.description && <span>{item.description}</span>}
                   <div className={css.inventoryActions}>
-                    {item.useCode?.trim() && onUse && (
+                    {item.useAction?.trim() && onUse && (
                       <button
                         type="button"
                         className={css.inventoryActionButton}
