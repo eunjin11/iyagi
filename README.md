@@ -51,6 +51,21 @@ yarn build && yarn preview
 addItem("potion", "회복 물약", "🧪", 2, "체력을 회복한다.", "heal(5)")
 ```
 
+### 인벤토리
+
+| 함수 | 동작 |
+| --- | --- |
+| `addItem(id, name, icon = "📦", quantity = 1, description = "", useAction = "")` | 아이템을 추가합니다. 같은 ID가 있으면 수량을 늘립니다. |
+| `hasItem(id)` | 현재 인벤토리에서 수량이 0보다 큰 아이템의 보유 여부를 반환합니다. |
+| `useItem(id)` | `useAction`을 실행하고 1개를 소비합니다. 사용 동작이 없으면 `false`를 반환합니다. |
+| `removeItem(id, quantity = 1)` | 지정한 수량을 제거합니다. 남은 수량이 0 이하이면 목록에서 제거합니다. |
+
+`hasItem()`은 별도의 보유 변수를 생성하거나 저장하지 않습니다. 조건에는 `if (hasItem("key"))`처럼 직접 사용할 수 있습니다. 메뉴에서 아이템을 누르면 설명과 사용·버리기 버튼이 나타나며, 사용 동작이 있는 아이템에만 사용 버튼이 표시됩니다.
+
+### 저장·불러오기
+
+저장은 브라우저의 `localStorage`에 기록됩니다. 진행 위치, 대사와 로그, 전역·지역 변수, 인벤토리(수량·설명·`useAction` 포함)를 함께 저장하고 불러옵니다. 저장 목록은 스토리별로 분리되며, 형식 검증을 통과하지 못한 저장 항목은 목록에서 제외됩니다.
+
 ## 같은 내용을 더 짧게: `.iyagi` vs JS(Object)
 
 이 프로젝트는 “스토리 작성”을 핵심으로 두기 때문에, 코드(JSON/JS)로 만들면 반복되는 구조(배열/필드명/중괄호)를 줄이고, 작가가 씬과 선택지를 자연스럽게 적을 수 있도록 **도메인 특화 언어(DSL)**를 만들었습니다.
@@ -143,20 +158,34 @@ https://github.com/user-attachments/assets/66e64c2d-16d7-428f-a3dc-af8959152ac4
 
 ```
 src/
-  parser/parseScene.ts    # parseDSL, .iyagi 파서
+  App.tsx                  # 메인/플레이 전환, 선택한 스토리와 이어하기 상태
+  pages/
+    MainPage.tsx           # 스토리 선택, 게임 시작, 이어하기
+    PlayPage.tsx           # 대사·선택지·로그·메뉴를 연결하는 플레이 화면
+  parser/parseScene.ts     # 공개 파싱 진입점 parseDSL
+  language/                # Langium 문법·파싱, AST → Story 변환
   hooks/
-    useStoryEngine.ts     # useStoryEngine (advance / choose + save/load)
-    useStoryPlay.ts       # 플레이 상태/전이 래퍼
-    useSaveEngine.ts      # 세이브/로드(localStorage) 훅
+    useStoryEngine.ts      # 플레이 API와 저장 API 결합
+    useStoryPlay.ts        # 플레이 상태·전이, 선택지 조건, 아이템 사용·버리기
+    useSaveEngine.ts       # 스토리별 저장 목록과 저장·불러오기
   story/
-    types.ts              # Story, Scene, Choice, Step (+ vars 메타: varDefs)
-    engineDerived.ts     # 상태 -> UI 파생(derive)
-    storyReducer.ts       # 상태 전이 (스크립트는 runScriptWithResult와 결합)
-    evalWhen.ts           # 선택지 조건 평가
-    current.ts            # 어떤 .iyagi를 쓸지 선택
-  actions/index.ts        # runScript, 내장 액션 + customActions
-  App.tsx                 # 플레이 UI
-  scenarios/demo.iyagi   # 샘플 시나리오
+    types.ts               # Story, Scene, Choice, Step, InventoryItem, 변수 타입
+    engineDerived.ts       # 엔진 상태에서 화면 표시 상태 도출
+    storyReducer.ts        # 진행·선택·인벤토리 등 상태 전이
+    runScriptWithResult.ts # 스크립트 실행 결과를 상태 전이에 전달
+    evalWhen.ts            # 선택지·if 조건 평가
+    snapshots.ts           # localStorage 저장과 저장 데이터 검증
+    current.ts             # 시나리오 목록과 기본 스토리
+  actions/
+    index.ts               # runScript와 내장 액션
+    queries.ts             # 스크립트·조건에서 공유하는 hasItem 등 조회 함수
+    customActions.ts       # 게임별 추가 액션
+  components/story/
+    GameMenu.tsx           # 저장·불러오기와 인벤토리 메뉴
+    InventoryGrid.tsx      # 아이템 슬롯·툴팁·사용·버리기
+  scenarios/
+    demo.iyagi             # 기본 샘플 스토리
+    item-test.iyagi        # 아이템 획득·사용·조건 검사 샘플
 ```
 
 ## 테스트
@@ -165,4 +194,15 @@ src/
 yarn test
 ```
 
-`src/__test__/` — 파싱, `evalWhen`, 액션, 리듀서 등.
+`src/__test__/` — 파싱, 조건 평가, 액션, 리듀서, 저장 데이터 검증 등.
+
+브라우저 E2E는 Playwright로 실행합니다.
+
+```bash
+yarn playwright install chromium
+yarn test:e2e
+# 설치된 Chrome으로 실행하려면
+PW_USE_SYSTEM_CHROME=1 yarn test:e2e
+```
+
+`e2e/` — 스토리 선택·저장 격리, 아이템 보유 조건·사용·버리기, 저장 후 인벤토리 복원, 툴팁 터치 동작 등. E2E는 개발 서버를 5174 포트에서 실행합니다.
