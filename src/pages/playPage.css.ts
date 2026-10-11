@@ -18,7 +18,7 @@ export const title = style({
   fontSize: "clamp(20px, 5vw, 28px)",
   letterSpacing: "0.2px",
   WebkitBackgroundClip: "text",
-  color: "black",
+  color: vars.color.text,
 });
 
 export const content = style({

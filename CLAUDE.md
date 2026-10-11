@@ -29,7 +29,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 1. **`.iyagi` DSL** → parsed by Langium (`src/language/parseIyagi.ts`) → AST → converted to `Story` object (`src/language/astToStory.ts`)
 2. At **build time**, the Vite plugin in `vite.config.ts` transforms `.iyagi` files to JSON
-3. `src/story/current.ts` imports all `src/scenarios/*.iyagi` files — the first one becomes the active story
+3. `src/story/current.ts` imports all `src/scenarios/*.iyagi` files into a story catalog; the main screen lets the player choose one
 4. The `Story` object (`src/story/types.ts`) is the canonical runtime format: `{ title, start, init, varDefs, scenes }`
 
 ### Core Engine
@@ -41,7 +41,7 @@ yarn vitest run src/__test__/actions.test.ts
 
 ### Action System
 
-Scripts in `.iyagi` files execute via `new Function(...)` (see `src/actions/index.ts`). Built-in actions: `jump(sceneId)`, `set(key, val)`, `inc(key, n)`, `dec(key, n)`. Variables declared in `vars:` auto-generate helpers: `setHp(v)`, `addHp(n)`, `subHp(n)` for numbers; `toggleAlive()` for booleans. Custom domain actions live in `src/actions/customActions.ts`.
+Scripts in `.iyagi` files execute via `new Function(...)` (see `src/actions/index.ts`). Built-in actions: `jump(sceneId)`, `set(key, val)`, `inc(key, n)`, `dec(key, n)`, `addItem(id, name, icon, quantity, description, useCode)`, `useItem(id)`, `removeItem(id, quantity)`, and `hasItem(id)`. Variables declared in `vars:` auto-generate helpers: `setHp(v)`, `addHp(n)`, `subHp(n)` for numbers; `toggleAlive()` for booleans. Custom domain actions live in `src/actions/customActions.ts`.
 
 ### Choice Conditions
 

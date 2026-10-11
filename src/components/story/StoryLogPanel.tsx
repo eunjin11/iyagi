@@ -13,6 +13,8 @@ type Props = {
 export const StoryLogPanel = ({ storyLog, isDev, interpolate }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const nonScriptEntries = storyLog.filter((entry) => entry.kind !== "script");
+  const visibleEntries = isDev ? storyLog : nonScriptEntries;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,7 +30,7 @@ export const StoryLogPanel = ({ storyLog, isDev, interpolate }: Props) => {
         className={css.trigger}
         onClick={() => setIsOpen(true)}
       >
-        스토리 로그 보기 ({storyLog.length}줄)
+        스토리 로그 보기 ({nonScriptEntries.length}줄)
       </button>
 
       <OverlayModal
@@ -44,18 +46,11 @@ export const StoryLogPanel = ({ storyLog, isDev, interpolate }: Props) => {
           aria-label="story-log"
           className={modal.scrollArea}
         >
-          {storyLog.length === 0 ? (
+          {visibleEntries.length === 0 ? (
             <div style={{ opacity: 0.5 }}>아직 기록이 없습니다.</div>
           ) : (
-            storyLog.map((entry) => {
-              const entryKey =
-                entry.kind === "enterScene"
-                  ? `enterScene|${entry.sceneId}`
-                  : entry.kind === "text"
-                    ? `text|${entry.sceneId}|${entry.content}`
-                    : entry.kind === "script"
-                      ? `script|${entry.sceneId}|${entry.code}`
-                      : `choice|${entry.sceneId}|${entry.text}`;
+            visibleEntries.map((entry, index) => {
+              const entryKey = `${index}|${entry.kind}`;
               return (
                 <div key={entryKey} style={{ marginBottom: "0.65em" }}>
                   {entry.kind === "enterScene" && (
