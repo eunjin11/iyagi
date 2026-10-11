@@ -24,36 +24,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-// Each allowed value category must have a runtime validator.
-// Adding null, arrays, objects, etc. to VariableBag makes missing validators an error.
-type VariableValueKind<T> = T extends number
-  ? "number"
-  : T extends string
-    ? "string"
-    : T extends boolean
-      ? "boolean"
-      : T extends null
-        ? "null"
-        : T extends undefined
-          ? "undefined"
-          : T extends bigint
-            ? "bigint"
-            : T extends symbol
-              ? "symbol"
-              : T extends (...args: never[]) => unknown
-                ? "function"
-                : T extends object
-                  ? "object"
-                  : "other";
+type VariableValueTypes = {
+  number: number;
+  string: string;
+  boolean: boolean;
+};
+
+// Unsupported VariableBag values require extending this map and its validators.
+type VariableValueValidators =
+  Exclude<
+    VariableBag[string],
+    VariableValueTypes[keyof VariableValueTypes]
+  > extends never
+    ? {
+        [K in keyof VariableValueTypes]: (
+          value: unknown,
+        ) => value is Extract<VariableBag[string], VariableValueTypes[K]>;
+      }
+    : never;
 
 const variableValueValidators = {
   number: (value) => typeof value === "number",
   string: (value) => typeof value === "string",
   boolean: (value) => typeof value === "boolean",
-} satisfies Record<
-  VariableValueKind<VariableBag[string]>,
-  (value: unknown) => boolean
->;
+} satisfies VariableValueValidators;
 
 function isVariableBag(value: unknown): value is VariableBag {
   return (
